@@ -436,8 +436,8 @@ do
             self.Window:Notify("Info", "Refreshed config list", 5);
         end);
 
-        self.PlaceAutoloadLabel = Section:CreateLabel("Place autoload (" .. self.CurrentPlaceId .. "): none");
-        self.GlobalAutoloadLabel = Section:CreateLabel("Global autoload: none");
+        self.PlaceAutoloadLabel = Section:CreateLabel("Place autoload (" .. self.CurrentPlaceId .. "): none", true);
+        self.GlobalAutoloadLabel = Section:CreateLabel("Global autoload: none", true);
         local PlaceAutoload = self:GetPlaceAutoloadConfig();
         if PlaceAutoload then
             self.PlaceAutoloadLabel:UpdateText("Place autoload (" .. self.CurrentPlaceId .. "): " .. PlaceAutoload);
