@@ -2,7 +2,7 @@
 	credits: 
 	"GetTextBounds" function taken from linoria library -- https://github.com/violin-suzutsuki/LinoriaLib
 	this ui library fork from Bracket V3 -- https://github.com/AlexR32/Bracket/blob/main/BracketV3.lua
-	i didnt really stick with 1 style i just did whatever i wanted at some parts i used ai help bc im lazy -- https://github.com/nfpw
+	i didnt really stick with 1 style i just did whatever i wanted at some parts used ai help bc im lazy -- https://github.com/nfpw
 ]]
 
 local Library = {Toggle = true, FirstTab = nil, TabCount = 0, ColorTable = {}, Whitelist = {}, CurrentTab = nil, WhitelistEnabled = false}
@@ -349,17 +349,37 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	return ReopenButton
 end
 
-local function updateplayers()
-	Library.PlayerList = {}
-	for _, player in ipairs(getservice("Players"):GetPlayers()) do
-		if player ~= Players.LocalPlayer then
-			table.insert(Library.PlayerList, player)
-		end
-	end
-end
-
 function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHeight: number?, MaxHeight: number?, InitialHeight: number?}, Parent: Instance): Window
 	local WindowInit: Window = {}
+
+	if Config == nil then 
+		Config = {
+			WindowName = "Developer Mode",
+			Color = Color3.fromRGB(255, 128, 64),
+			Keybind = Enum.KeyCode.RightShift,
+			MinHeight = 100,
+			MaxHeight = 600,
+			InitialHeight = 400,
+			MinWidth = 300,
+			MaxWidth = 800,
+			InitialWidth = 500,
+			Assets = false
+		}
+	else
+		if Config.Assets == nil then
+			Config.Assets = false
+		end
+		Config.Keybind = Config.Keybind or Enum.KeyCode.RightShift
+		Config.WindowName = Config.WindowName or "Developer Mode"
+		Config.Color = Config.Color or Color3.fromRGB(255, 128, 64)
+		Config.MinHeight = Config.MinHeight or 100
+		Config.MaxHeight = Config.MaxHeight or 600
+		Config.InitialHeight = Config.InitialHeight or 400
+		Config.MinWidth = Config.MinWidth or 300
+		Config.MaxWidth = Config.MaxWidth or 800
+		Config.InitialWidth = Config.InitialWidth or 500
+	end 
+
 	if Config.Assets then
 		shared.Anka.AnkaLoadAssets = true
 	end
@@ -396,18 +416,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	local TContainer = Holder.TContainer
 	local TBContainer = Holder.TBContainer.Holder
 
-	Config.MinHeight = Config.MinHeight or 100
-	Config.MaxHeight = Config.MaxHeight or 600
-	Config.InitialHeight = Config.InitialHeight or 400
-	Config.MinWidth = Config.MinWidth or 300
-	Config.MaxWidth = Config.MaxWidth or 800
-	Config.InitialWidth = Config.InitialWidth or 500
 	Main.Size = UDim2.new(0, Config.InitialWidth, 0, Config.InitialHeight)
 	makeresizable(Main, Config.MinHeight, Config.MaxHeight, Config.MinWidth, Config.MaxWidth)
 
 	Screen.Name = HttpService:GenerateGUID(false)
 	Screen.Parent = Parent
 	Topbar.WindowName.Text = Config.WindowName
+	function Library:SetWindowName(str)
+		Topbar.WindowName.Text = str
+	end
 	local TestScreenGui = Instance.new("ScreenGui")
 	TestScreenGui.Parent = Screen
 
@@ -1997,11 +2014,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							elseif Input.UserInputType == Enum.UserInputType.Keyboard then
 								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
 								if Key == Selected then
-									if Callback then
-										if KeybindMode == "Toggle" then
+									if KeybindMode == "Toggle" then
+										ToggleState = not ToggleState
+										SetState(ToggleState)
+										if Callback then
 											Callback(Key)
-										else
-											SetState(true)
+										end
+									elseif KeybindMode == "Hold" then
+										SetState(true)
+										if Callback then
+											Callback(Key)
 										end
 									end
 								end
@@ -2746,6 +2768,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local ColorpickerRender = nil
 				local RainbowRender = nil
 				local IsRainbowEnabled = false
+				local sh1tcon = nil
 
 				local GradientPalette = Pallete.GradientPalette
 				local ColorSlider = Pallete.ColorSlider
@@ -2769,6 +2792,45 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if IsAccentColorpicker then
 						ChangeColor(currentColor, CurrentTransparency)
 					end
+				end
+
+				local function ihatemyself(position)
+					local palettepos = Pallete.AbsolutePosition
+					local palettesize = Pallete.AbsoluteSize
+					return position.X >= palettepos.X and position.X <= palettepos.X + palettesize.X and position.Y >= palettepos.Y and position.Y <= palettepos.Y + palettesize.Y
+				end
+
+				local function closePalette()
+					Pallete.Visible = false
+					if ColorpickerRender then
+						ColorpickerRender:Disconnect()
+						ColorpickerRender = nil
+					end
+					if sh1tcon then
+						sh1tcon:Disconnect()
+						sh1tcon = nil
+					end
+				end
+
+				local function blehh()
+					if sh1tcon then
+						sh1tcon:Disconnect()
+					end
+					sh1tcon = UserInputService.InputBegan:Connect(function(input, gp)
+						if not gp and Pallete.Visible then
+							local inputpos
+							if input.UserInputType == Enum.UserInputType.MouseButton1 then
+								inputpos = UserInputService:GetMouseLocation()
+							elseif input.UserInputType == Enum.UserInputType.Touch then
+								inputpos = input.Position
+							else
+								return
+							end
+							if not ihatemyself(inputpos) then
+								closePalette()
+							end
+						end
+					end)
 				end
 
 				RainbowToggle.MouseButton1Click:Connect(function()
@@ -2802,12 +2864,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								Pallete.Position = UDim2.new(0, pos.X - 129, 0, pos.Y + 52)
 							end)
 							Pallete.Visible = true
+							blehh()
 						else
-							Pallete.Visible = false
-							if ColorpickerRender then
-								ColorpickerRender:Disconnect()
-								ColorpickerRender = nil
-							end
+							closePalette()
 						end
 					end
 				end)
@@ -3041,11 +3100,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function ColorpickerInit:ClosePallete()
-					Pallete.Visible = false
-					if ColorpickerRender then
-						ColorpickerRender:Disconnect()
-						ColorpickerRender = nil
-					end
+					closePalette()
 				end
 
 				function ColorpickerInit:SetTransparency(transparency)
@@ -3170,7 +3225,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 		return HudInit
 	end
-	
+
 	local uitoggle = Config.Keybind
 	local toggleboleanshit = true
 	UserInputService.InputBegan:Connect(function(input, gp)
@@ -3182,7 +3237,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	function Library:ChangeToggleKeybind(newbindomg)
 		uitoggle = newbindomg
 	end
-	
+
 	return WindowInit
 end
 
