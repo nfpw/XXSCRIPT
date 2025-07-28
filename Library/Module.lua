@@ -2602,51 +2602,46 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end
 
-				function DropdownInit:AddOption(OptionName: string, SelectImmediately: boolean?)
+				function DropdownInit:AddOption(OptionName: string | {any}, SelectImmediately: boolean?)
+					if type(OptionName) == "table" then
+						for _, option in pairs(OptionName) do
+							self:AddOption(tostring(option), SelectImmediately)
+						end
+						return
+					end
+					local str = tostring(OptionName)
 					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
-						if child:IsA("TextButton") and child.Name == OptionName then
+						if child:IsA("TextButton") and child.Name == str then
 							return
 						end
 					end
-
 					local Option = Folder.Option:Clone()
-					Option.Name = OptionName
+					Option.Name = str
 					Option.Parent = Dropdown.Container.Holder.Container
-					Option.Title.Text = OptionName
+					Option.Title.Text = str
 					Option.BackgroundColor3 = Config.Color
 					Option.Size = UDim2.new(1, 0, 0, Option.Title.TextBounds.Y + 5)
 					table.insert(Library.ColorTable, Option)
-
 					local originalSize = Option.Size
-
 					if Multi then
-						SelectedOptions[OptionName] = false
-
+						SelectedOptions[str] = false
 						if SelectImmediately then
-							SelectedOptions[OptionName] = true
+							SelectedOptions[str] = true
 						end
-
-						UpdateOptionVisual(Option, SelectedOptions[OptionName], true)
-
+						UpdateOptionVisual(Option, SelectedOptions[str], true)
 						Option.MouseButton1Up:Connect(function()
-							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
-								{Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
-							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
-								{Size = originalSize})
-
+							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
+							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = originalSize})
 							clickTween1:Play()
 							clickTween1.Completed:Wait()
 							clickTween2:Play()
-
-							SelectedOptions[OptionName] = not SelectedOptions[OptionName]
-							UpdateOptionVisual(Option, SelectedOptions[OptionName])
+							SelectedOptions[str] = not SelectedOptions[str]
+							UpdateOptionVisual(Option, SelectedOptions[str])
 							UpdateText()
-
 							local selectedArray = {}
 							for k, v in pairs(SelectedOptions) do
 								if v then table.insert(selectedArray, k) end
 							end
-
 							local returnValue = Callback(selectedArray)
 							if type(returnValue) == "table" then
 								SelectedOptions = {}
@@ -2661,62 +2656,51 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								UpdateText()
 							end
 						end)
-
 						Option.MouseEnter:Connect(function()
-							if not SelectedOptions[OptionName] then
+							if not SelectedOptions[str] then
 								TweenService:Create(Option, hoverInfo, {
 									BackgroundTransparency = 0.85,
 									Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 1)
 								}):Play()
 							end
 						end)
-
 						Option.MouseLeave:Connect(function()
 							TweenService:Create(Option, hoverInfo, {
 								Size = originalSize,
-								BackgroundTransparency = SelectedOptions[OptionName] and 0.7 or 1
+								BackgroundTransparency = SelectedOptions[str] and 0.7 or 1
 							}):Play()
 						end)
 					else
 						if SelectImmediately then
-							UpdateSingleSelection(OptionName, true)
+							UpdateSingleSelection(str, true)
 						end
-
 						Option.MouseButton1Click:Connect(function()
-							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
-								{Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
-							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
-								{Size = originalSize})
-
+							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
+							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = originalSize})
 							clickTween1:Play()
 							clickTween1.Completed:Wait()
 							clickTween2:Play()
-
-							UpdateSingleSelection(OptionName)
-							Callback(OptionName)
+							UpdateSingleSelection(str)
+							Callback(str)
 						end)
-
 						Option.MouseEnter:Connect(function()
-							if CurrentSelectedOption ~= OptionName then
+							if CurrentSelectedOption ~= str then
 								TweenService:Create(Option, hoverInfo, {
 									BackgroundTransparency = 0.85,
 									Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 1)
 								}):Play()
 							end
 						end)
-
 						Option.MouseLeave:Connect(function()
 							TweenService:Create(Option, hoverInfo, {
 								Size = originalSize,
-								BackgroundTransparency = CurrentSelectedOption == OptionName and 0.7 or 1
+								BackgroundTransparency = CurrentSelectedOption == str and 0.7 or 1
 							}):Play()
 						end)
 					end
-
 					if Multi then
 						UpdateText()
 					end
-
 					PreCalculateSizes()
 				end
 
