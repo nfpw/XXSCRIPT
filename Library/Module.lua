@@ -754,8 +754,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	local function ChangeColor(Color)
 		Config.Color = Color
 		Notifications.AccentColor = Color
+
 		for i, v in pairs(Library.ColorTable) do
 			local isButtonElement = false
+			local isToggleElement = false
 			if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " B$") then
 				isButtonElement = true
 			elseif v.Name and string.find(v.Name, " B$") then
@@ -765,7 +767,20 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					isButtonElement = true
 				end
 			end
-			if not isButtonElement then
+			if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " T %d+$") then
+				if v.Name == "Toggle" then
+					if v.BackgroundColor3 == Config.Color then
+						v.BackgroundColor3 = Color
+					end
+					isToggleElement = true
+				elseif v.Name == "Title" then
+					if v:IsA("TextLabel") then
+						v.TextColor3 = Color
+					end
+					isToggleElement = true
+				end
+			end
+			if not isButtonElement and not isToggleElement then
 				if v:IsA("ImageButton") then
 					v.ImageColor3 = Color
 				elseif v.Name == "GlowEffect" then
@@ -801,19 +816,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						})
 					end
 				else
-					local nognig = false
-					local bipbopt = false
-					if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " T$") and v.Name == "Toggle" then
-						nognig = true
-					end
-					if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " T$") then
-						if v.Name == "Background" or v.Name == "Title" then
-							bipbopt = true
-						end
-					end
-					if not nognig and not bipbopt then
-						v.BackgroundColor3 = Color
-					end
+					v.BackgroundColor3 = Color
 				end
 			end
 		end
@@ -1207,7 +1210,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				return ButtonInit 
 			end
 
-			function SectionInit:CreateTextBox(Name: string, PlaceHolder: string, NumbersOnly: boolean, Callback: (Value: any) -> ()): Element
+			function SectionInit:CreateTextBox(Name: string, PlaceHolder: string, NumbersOnly: boolean, Callback: (Value: any) -> (), WrapText: boolean?): Element
 				local TextBoxInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
@@ -1230,6 +1233,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local originalBorderColor = TextBox.Background.BorderColor3
 				local originalTransparency = TextBox.Background.BackgroundTransparency
 				local originalTitleColor = TextBox.Title.TextColor3
+
+				TextBox.Title.TextWrapped = WrapText or false
+				if WrapText then
+					TextBox.Title.AutomaticSize = Enum.AutomaticSize.Y
+					TextBox.Title.Size = UDim2.new(1, 0, 0, 0)
+					TextBox.Size = UDim2.new(1, -10, 0, TextBox.Title.TextBounds.Y + 25)
+				else
+					TextBox.Title.AutomaticSize = Enum.AutomaticSize.None
+				end
 
 				function TextBoxInit:UpdateColors()
 					if TextBox.Background.Input:IsFocused() then
@@ -1378,7 +1390,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				return TextBoxInit
 			end
 
-			function SectionInit:CreateToggle(Name: string, Default: boolean?, Callback: (State: boolean) -> (), Status: string?, Info: string?): Element
+			function SectionInit:CreateToggle(Name: string, Default: boolean?, Callback: (State: boolean) -> (), Status: string?, Info: string?, WrapText: boolean?): Element
 				local ToggleInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
@@ -2070,6 +2082,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					return KeybindObject
 				end
 
+				Toggle.Title.TextWrapped = WrapText or false
+				if WrapText then
+					Toggle.Title.AutomaticSize = Enum.AutomaticSize.Y
+					Toggle.Size = UDim2.new(1, -10, 0, 0)
+					Toggle.AutomaticSize = Enum.AutomaticSize.Y
+				else
+					Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
+				end
+
 				ToggleInit.Type = "Toggle"
 				ToggleInit.UniqueID = UniqueID
 				shared.Anka.Elements[UniqueID] = ToggleInit
@@ -2077,7 +2098,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				return ToggleInit
 			end
 
-			function SectionInit:CreateSlider(Name: string, Min: number, Max: number, Default: number?, Precise: boolean?, Callback: (Value: number) -> ()): Element
+			function SectionInit:CreateSlider(Name: string, Min: number, Max: number, Default: number?, Precise: boolean?, Callback: (Value: number) -> (), WrapText: boolean?): Element
 				local SliderInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
@@ -2237,6 +2258,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					return Slider.Visible
 				end
 
+				Slider.Title.TextWrapped = WrapText or false
+				if WrapText then
+					Slider.Title.AutomaticSize = Enum.AutomaticSize.Y
+					Slider.Title.Size = UDim2.new(1, 0, 0, 0)
+					Slider.AutomaticSize = Enum.AutomaticSize.Y
+				else
+					Slider.Title.AutomaticSize = Enum.AutomaticSize.None
+				end
+
 				SetValue(DefaultLocal)
 				SliderInit.Type = "Slider"
 				SliderInit.UniqueID = UniqueID
@@ -2244,7 +2274,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				return SliderInit
 			end
 
-			function SectionInit:CreateDropdown(Name: string, OptionTable: {string}, Callback: (Value: any) -> (), InitialValue: any?, Multi: boolean?): Element
+			function SectionInit:CreateDropdown(Name: string, OptionTable: {string}, Callback: (Value: any) -> (), InitialValue: any?, Multi: boolean?, WrapText: boolean?): Element
 				local DropdownInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
@@ -2704,13 +2734,53 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					PreCalculateSizes()
 				end
 
+				function DropdownInit:RemoveOption(OptionName: string)
+					local str = tostring(OptionName)
+					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+						if child:IsA("TextButton") and child.Name == str then
+							child:Destroy()
+							break
+						end
+					end
+
+					if Multi then
+						SelectedOptions[str] = nil
+						UpdateText()
+					else
+						if CurrentSelectedOption == str then
+							CurrentSelectedOption = nil
+							Dropdown.Container.Value.Text = ""
+						end
+					end
+
+					PreCalculateSizes()
+				end
+
+				function DropdownInit:ChangeOptions(NewOptionTable: {string}, NewInitialValue: any?)
+					self:ClearOptions()
+					self:AddOption(NewOptionTable)
+					if NewInitialValue then
+						self:SetOption(NewInitialValue)
+					end
+				end
+
+				Dropdown.Title.TextWrapped = WrapText or false
+				if WrapText then
+					Dropdown.Title.AutomaticSize = Enum.AutomaticSize.Y
+					Dropdown.Title.Size = UDim2.new(1, 0, 0, 0)
+					Dropdown.Container.Position = UDim2.new(0, 0, 0, Dropdown.Title.TextBounds.Y + 5)
+					Dropdown.Size = UDim2.new(1, -10, 0, Dropdown.Title.TextBounds.Y + 25)
+				else
+					Dropdown.Title.AutomaticSize = Enum.AutomaticSize.None
+				end
+
 				DropdownInit.Type = Multi and "MultiDropdown" or "Dropdown"
 				DropdownInit.UniqueID = UniqueID
 				shared.Anka.Elements[UniqueID] = DropdownInit
 				return DropdownInit
 			end
 
-			function SectionInit:CreateColorpicker(Name: string, Callback: (Color: Color3, Transparency: number?) -> (), IsAccentColorpicker: boolean?): Element
+			function SectionInit:CreateColorpicker(Name: string, Callback: (Color: Color3, Transparency: number?) -> (), IsAccentColorpicker: boolean?, WrapText: boolean?): Element
 				local ColorpickerInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
@@ -2733,7 +2803,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				RainbowToggle.Size = UDim2.new(0, 20, 0, 10)
 				RainbowToggle.Position = UDim2.new(1, -30, 0.5, 0)
 				RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-				RainbowToggle.BorderSizePixel = 1
+				RainbowToggle.BorderSizePixel = 0
 				RainbowToggle.BorderColor3 = Color3.fromRGB(60, 60, 60)
 				RainbowToggle.Text = "-"
 				RainbowToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -3095,6 +3165,14 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				UpdateColor()
 				UpdateTransparencySlider()
 
+				Colorpicker.Title.TextWrapped = WrapText or false
+				if WrapText then
+					Colorpicker.Title.AutomaticSize = Enum.AutomaticSize.Y
+					Colorpicker.Size = UDim2.new(1, -10, 0, 0)
+					Colorpicker.AutomaticSize = Enum.AutomaticSize.Y
+				else
+					Colorpicker.Title.AutomaticSize = Enum.AutomaticSize.None
+				end
 				ColorpickerInit.Type = "ColorPicker"
 				ColorpickerInit.UniqueID = UniqueID
 				ColorpickerInit.IsAccentColorpicker = IsAccentColorpicker or false
@@ -3102,7 +3180,185 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 				return ColorpickerInit
 			end
+			
+			function SectionInit:CreateScriptDisplay(Name: string, ScriptContent: string, WrapText: boolean?): Element
+				local ScriptDisplayInit: Element = {}
+				shared.Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
 
+				local ScriptFrame = Instance.new("Frame")
+				ScriptFrame.Name = Name .. " SD"
+				ScriptFrame.Parent = Section.Container
+				ScriptFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+				ScriptFrame.BorderSizePixel = 0
+				ScriptFrame.Size = UDim2.new(1, -10, 0, 250)
+				ScriptFrame.AutomaticSize = Enum.AutomaticSize.Y
+				ScriptFrame.ClipsDescendants = true
+				ScriptFrame.ZIndex = 3
+
+				local FrameStroke = Instance.new("UIStroke")
+				FrameStroke.Parent = ScriptFrame
+				FrameStroke.Color = Color3.fromRGB(60, 60, 60)
+				FrameStroke.Thickness = 1
+				FrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+				local TitleBar = Instance.new("Frame")
+				TitleBar.Name = "TitleBar"
+				TitleBar.Parent = ScriptFrame
+				TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+				TitleBar.Size = UDim2.new(1, 0, 0, 25)
+				TitleBar.ZIndex = 3
+				TitleBar.BorderSizePixel = 0
+
+				local TitleLabel = Instance.new("TextLabel")
+				TitleLabel.Name = "Title"
+				TitleLabel.Parent = TitleBar
+				TitleLabel.BackgroundTransparency = 1
+				TitleLabel.Text = Name
+				TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+				TitleLabel.Font = Enum.Font.Code
+				TitleLabel.TextSize = 14
+				TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+				TitleLabel.Position = UDim2.new(0, 8, 0, 0)
+				TitleLabel.Size = UDim2.new(1, -50, 1, 0)
+				TitleLabel.ZIndex = 3
+
+				local CopyButton = Instance.new("TextButton")
+				CopyButton.Name = "CopyButton"
+				CopyButton.Parent = TitleBar
+				CopyButton.BackgroundTransparency = 1
+				CopyButton.Size = UDim2.new(0, 40, 1, 0)
+				CopyButton.Position = UDim2.new(1, -45, 0, 0)
+				CopyButton.Text = "Copy"
+				CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+				CopyButton.Font = Enum.Font.Code
+				CopyButton.TextSize = 12
+				CopyButton.TextXAlignment = Enum.TextXAlignment.Right
+				CopyButton.ZIndex = 3
+
+				CopyButton.MouseEnter:Connect(function()
+					CopyButton.TextColor3 = Color3.fromRGB(220, 220, 220)
+				end)
+
+				CopyButton.MouseLeave:Connect(function()
+					CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+				end)
+
+				CopyButton.Activated:Connect(function()
+					local copy = setclipboard or print
+					copy(ScriptContent)
+					local tt = CopyButton.Text
+					CopyButton.Text = "Copied!"
+					task.wait(.3)
+					CopyButton.Text = tt
+				end)
+
+				local ScrollFrame = Instance.new("ScrollingFrame")
+				ScrollFrame.Name = "Content"
+				ScrollFrame.Parent = ScriptFrame
+				ScrollFrame.BorderSizePixel = 0
+				ScrollFrame.BackgroundTransparency = 1
+				ScrollFrame.Size = UDim2.new(1, 0, 1, -25)
+				ScrollFrame.Position = UDim2.new(0, 0, 0, 25)
+				ScrollFrame.ScrollBarThickness = 5
+				ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+				ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+				ScrollFrame.ZIndex = 3
+
+				local ContentLabel = Instance.new("TextLabel")
+				ContentLabel.Name = "ScriptText"
+				ContentLabel.Parent = ScrollFrame
+				ContentLabel.BackgroundTransparency = 1
+				ContentLabel.RichText = true
+				ContentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+				ContentLabel.Font = Enum.Font.Code
+				ContentLabel.TextSize = 12
+				ContentLabel.TextXAlignment = Enum.TextXAlignment.Left
+				ContentLabel.TextYAlignment = Enum.TextYAlignment.Top
+				ContentLabel.TextWrapped = WrapText or false
+				ContentLabel.ZIndex = 3
+				ContentLabel.Text = ScriptContent
+
+				if WrapText then
+					ContentLabel.Size = UDim2.new(1, -10, 0, 0)
+					ContentLabel.AutomaticSize = Enum.AutomaticSize.Y
+				else
+					ContentLabel.Size = UDim2.new(1, -10, 0, ContentLabel.TextBounds.Y)
+				end
+				
+				local function SyntaxHighlight(code)
+					local function richtextr(str)
+						return str:gsub("[&<>]", {
+							["&"] = "&amp;",
+							["<"] = "&lt;",
+							[">"] = "&gt;"
+						})
+					end
+					code = richtextr(code)
+					local keywords = {
+						"and", "break", "do", "else", "elseif", "end",
+						"false", "for", "function", "goto", "if", "in", 
+						"local", "nil", "not", "or", "repeat", "return", 
+						"then", "true", "until", "while"
+					}
+					for _, keyword in ipairs(keywords) do
+						code = code:gsub("(%f[%w_])(" .. keyword .. ")(%f[^%w_])", "%1<font color='#569CD6'>%2</font>%3")
+					end
+					code = code:gsub("(%f[%w_])(%d+%.?%d*)(%f[^%w_])","%1<font color='#B5CEA8'>%2</font>%3")
+					code = code:gsub('("(\\"|[^"])*")', "<font color='#CE9178'>%1</font>")
+					code = code:gsub("('(\\'|[^'])*')", "<font color='#CE9178'>%1</font>")
+					code = code:gsub("(%-%-[^\n]*)", "<font color='#57A64A'>%1</font>")
+					code = code:gsub("(%-%-%[%[.-%]%])", "<font color='#57A64A'>%1</font>")
+					code = code:gsub("(function%s+)([%w_%.]+)","%1<font color='#DCDCAA'>%2</font>")
+					return code
+				end
+				
+				ContentLabel.Text = SyntaxHighlight(ScriptContent)
+				
+				ContentLabel:GetPropertyChangedSignal("TextBounds"):Connect(function()
+					ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ContentLabel.TextBounds.Y + 10)
+				end)
+
+				function ScriptDisplayInit:UpdateText(NewText)
+					ScriptContent = NewText
+					ContentLabel.Text = SyntaxHighlight(ScriptContent)
+				end
+
+				function ScriptDisplayInit:GetText()
+					return ScriptContent
+				end
+
+				function ScriptDisplayInit:SetVisible(Visible)
+					ScriptFrame.Visible = Visible
+				end
+
+				function ScriptDisplayInit:IsVisible()
+					return ScriptFrame.Visible
+				end
+
+				function ScriptDisplayInit:ToggleVisibility()
+					ScriptFrame.Visible = not ScriptFrame.Visible
+					return ScriptFrame.Visible
+				end
+
+				function ScriptDisplayInit:SetWrapText(Wrap)
+					ContentLabel.TextWrapped = Wrap
+					if Wrap then
+						ContentLabel.AutomaticSize = Enum.AutomaticSize.Y
+						ContentLabel.Size = UDim2.new(1, -10, 0, 0)
+					else
+						ContentLabel.AutomaticSize = Enum.AutomaticSize.None
+						ContentLabel.Size = UDim2.new(1, -10, 0, ContentLabel.TextBounds.Y)
+					end
+				end
+
+				ScriptDisplayInit.Type = "ScriptDisplay"
+				ScriptDisplayInit.UniqueID = UniqueID
+				shared.Anka.Elements[UniqueID] = ScriptDisplayInit
+
+				return ScriptDisplayInit
+			end
+			
 			return SectionInit
 		end
 
