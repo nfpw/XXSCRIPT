@@ -754,10 +754,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	local function ChangeColor(Color)
 		Config.Color = Color
 		Notifications.AccentColor = Color
-
 		for i, v in pairs(Library.ColorTable) do
 			local isButtonElement = false
-			local isToggleElement = false
 			if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " B$") then
 				isButtonElement = true
 			elseif v.Name and string.find(v.Name, " B$") then
@@ -767,20 +765,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					isButtonElement = true
 				end
 			end
-			if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " T %d+$") then
-				if v.Name == "Toggle" then
-					if v.BackgroundColor3 == Config.Color then
-						v.BackgroundColor3 = Color
-					end
-					isToggleElement = true
-				elseif v.Name == "Title" then
-					if v:IsA("TextLabel") then
-						v.TextColor3 = Color
-					end
-					isToggleElement = true
-				end
-			end
-			if not isButtonElement and not isToggleElement then
+			if not isButtonElement then
 				if v:IsA("ImageButton") then
 					v.ImageColor3 = Color
 				elseif v.Name == "GlowEffect" then
@@ -816,7 +801,19 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						})
 					end
 				else
-					v.BackgroundColor3 = Color
+					local nognig = false
+					local bipbopt = false
+					if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " T$") and v.Name == "Toggle" then
+						nognig = true
+					end
+					if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " T$") then
+						if v.Name == "Background" or v.Name == "Title" then
+							bipbopt = true
+						end
+					end
+					if not nognig and not bipbopt then
+						v.BackgroundColor3 = Color
+					end
 				end
 			end
 		end
