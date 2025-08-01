@@ -3469,7 +3469,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	local uitoggle = Config.Keybind
 	local toggleboleanshit = true
 	UserInputService.InputBegan:Connect(function(input, gp)
-		if UserInputService:GetFocusedTextBox() == nil and input.KeyCode == Config.Keybind and not gp then
+		if UserInputService:GetFocusedTextBox() == nil and input.KeyCode == uitoggle and not gp then
 			toggleboleanshit = not toggleboleanshit
 			Toggle(toggleboleanshit)
 		end
