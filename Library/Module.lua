@@ -3369,6 +3369,50 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				return ScriptDisplayInit
 			end
 			
+			function SectionInit:CreateDivider(): Element
+    			local DividerInit: Element = {}
+    			shared.Anka.ElementCounter += 1
+    			local UniqueID = "Divider - " .. shared.Anka.ElementCounter
+    
+    			local Divider = Instance.new("Frame")
+    			Divider.Name = "Divider"
+    			Divider.Parent = Section.Container
+    			Divider.BackgroundTransparency = 1
+    			Divider.Size = UDim2.new(1, -10, 0, 5)
+    			Divider.ZIndex = 3
+    
+    			local Line = Instance.new("Frame")
+    			Line.Name = "Line"
+    			Line.Parent = Divider
+    			Line.Size = UDim2.new(1, 0, 1, 0)
+    			Line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    			Line.BorderSizePixel = 0
+    			Line.ZIndex = 3
+
+    			function DividerInit:SetVisible(Visible: boolean)
+        			Divider.Visible = Visible
+    			end
+
+    			function DividerInit:IsVisible(): boolean
+        			return Divider.Visible
+    			end
+
+    			function DividerInit:ToggleVisibility()
+       				Divider.Visible = not Divider.Visible
+        			return Divider.Visible
+    			end
+
+    			function DividerInit:SetColor(Color: Color3)
+        			Line.BackgroundColor3 = Color
+    			end
+
+    			DividerInit.Type = "Divider"
+    			DividerInit.UniqueID = UniqueID
+    			shared.Anka.Elements[UniqueID] = DividerInit
+    
+    			return DividerInit
+			end
+
 			return SectionInit
 		end
 
