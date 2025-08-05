@@ -2079,14 +2079,27 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					return KeybindObject
 				end
 
-				Toggle.Title.TextWrapped = WrapText or false
-				if WrapText then
-					Toggle.Title.AutomaticSize = Enum.AutomaticSize.Y
-					Toggle.Size = UDim2.new(1, -10, 0, 0)
-					Toggle.AutomaticSize = Enum.AutomaticSize.Y
-				else
-					Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
-				end
+    			function ToggleInit:SetVisible(Visible: boolean)
+        			Toggle.Visible = Visible
+    			end
+
+    			function ToggleInit:IsVisible(): boolean
+       	 			return Toggle.Visible
+    			end
+
+    			function ToggleInit:ToggleVisibility()
+        			Toggle.Visible = not Toggle.Visible
+        			return Toggle.Visible
+    			end
+
+    			Toggle.Title.TextWrapped = WrapText or false
+    			if WrapText then
+        			Toggle.Title.AutomaticSize = Enum.AutomaticSize.Y
+        			Toggle.Size = UDim2.new(1, -10, 0, 0)
+        			Toggle.AutomaticSize = Enum.AutomaticSize.Y
+    			else
+        			Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
+    			end
 
 				ToggleInit.Type = "Toggle"
 				ToggleInit.UniqueID = UniqueID
