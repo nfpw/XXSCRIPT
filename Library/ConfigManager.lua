@@ -74,32 +74,36 @@ do
                 if Object.GetKeybind then
                     local Keybind = Object:GetKeybind();
                     if Keybind then
-                        Data.keybind = tostring(Keybind:GetBind()):gsub("Enum.KeyCode.", "");
-                        Data.keybindMode = Keybind:GetMode();
+                        local bindEnum = Keybind:GetBind()
+                        if bindEnum and bindEnum ~= Enum.KeyCode.Unknown then
+                            Data.keybind = tostring(bindEnum):gsub("Enum.KeyCode.", "");
+                            Data.keybindMode = Keybind:GetMode();
+                        end;
                     end;
                 end;
                 return Data;
             end,
             Load = function(Idx: string, Data: any)
-                if shared.Anka.Elements[Idx] then
-                    if shared.Anka.Elements[Idx].SetState then
-                        shared.Anka.Elements[Idx]:SetState(Data.value);
-                    end;
-                    if Data.keybind and shared.Anka.Elements[Idx].GetKeybind then
-                        local Keybind = shared.Anka.Elements[Idx]:GetKeybind();
-                        if Keybind then
-                            local Success, EnumValue = pcall(function()
-                                return Enum.KeyCode[Data.keybind];
-                            end);
-                            if Success then
-                                Keybind:SetBind(EnumValue);
-                                if Data.keybindMode then
-                                    Keybind:SetMode(Data.keybindMode);
-                                end
+                DelayedCall(function()
+                    local element = shared.Anka.Elements[Idx]
+                    if element and element.SetState then
+                        element:SetState(Data.value);
+                        if Data.keybind and element.GetKeybind then
+                            local Keybind = element:GetKeybind();
+                            if Keybind then
+                                local Success, EnumValue = pcall(function()
+                                    return Enum.KeyCode[Data.keybind];
+                                end);
+                                if Success and EnumValue then
+                                    Keybind:SetBind(EnumValue);
+                                    if Data.keybindMode then
+                                        Keybind:SetMode(Data.keybindMode);
+                                    end
+                                end;
                             end;
                         end;
                     end;
-                end;
+                end, 0.1)
             end
         },
         Slider = {
