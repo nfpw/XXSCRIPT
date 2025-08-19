@@ -11,9 +11,10 @@ shared.Anka = {
 		MaxWidth = 800,
 		InitialWidth = 500,
 	},
+    Key = "NONE",
 }
 
-local req = request({Url = "https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Games/universal.lua", Method = "GET"})
+local req = request({Url = "https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Loader/GetScript.lua", Method = "GET"})
 if req.StatusCode == 200 then
     loadstring(req.Body)()
 end
