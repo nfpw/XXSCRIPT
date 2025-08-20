@@ -271,9 +271,11 @@ if Sections.FarmSection then
                                         humanoidrootpart.Velocity = Vector3.new(0, 0, 0)
                                         humanoidrootpart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                                     end
-                                    LocalPlayer.Character:SetPrimaryPartCFrame(CFrame.new(child.Position + Vector3.new(3, 5, -5)))
+                                    LocalPlayer.Character:SetPrimaryPartCFrame(CFrame.new(child.Position + Vector3.new(1, 5, 0)))
                                     task.wait(.1)
-                                    LocalPlayer.Character:SetPrimaryPartCFrame(child.CFrame + Vector3.new(0, 2, 0))
+                                    LocalPlayer.Character:SetPrimaryPartCFrame(child.CFrame + Vector3.new(0, -1, 0))
+                                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, child, 0)
+                                    firetouchinterest(LocalPlayer.Character.HumanoidRootPart, child, 1)
                                 end
                                 repeat task.wait(.1) until child.Transparency >= 1 or not Farm.AutoGrabMoney
                             end
