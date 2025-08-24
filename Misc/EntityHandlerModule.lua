@@ -51,6 +51,7 @@ end
 
 -- I only did one game for example
 local gameconfigs = {
+	--[[
 	[5995470825] = { -- Hypershot
 		method = "standard",
 		characterpath = function(player) return player.Character end,
@@ -68,6 +69,7 @@ local gameconfigs = {
 			return character.Name 
 		end
 	},
+	]]
 }
 
 local currentconfig = gameconfigs[entityhandler.gameid] or {
