@@ -42,11 +42,6 @@ local function requesturl(i, v)
 	if RunService:IsStudio() then	
 		return nil
 	end
-	if v ~= "Asset" and readfile and isfile then
-		if isfile(i) then
-			return readfile(i)
-		end
-	end
 	if v == nil and not RunService:IsStudio() then
 		local req = http_request({
 			Url = i,
