@@ -238,7 +238,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	ReopenButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	ReopenButton.Size = UDim2.new(0, 45, 0, 45)
 	ReopenButton.Position = UDim2.new(0.85, 50, 0.8, -200)
-	ReopenButton.Visible = false
+	ReopenButton.Visible = true
 	local borderFrame1 = Instance.new("Frame")
 	borderFrame1.Name = "BorderFrame1"
 	borderFrame1.Size = UDim2.new(1, -2, 1, -2)
@@ -331,16 +331,21 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	table.insert(Library.ColorTable, textLabel)
 	table.insert(Library.ColorTable, frameGradient)
 	table.insert(Library.ColorTable, gradient)
-
+	
 	makedraggable(ReopenButton, ReopenButton)
-
+	local deltabooleanomg = false
+	
 	innerFrame.InputEnded:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.Touch or Input.UserInputType == Enum.UserInputType.MouseButton1 then
-			Main.Visible = true
-			ReopenButton.Visible = false
-			Toggle(true)
+			deltabooleanomg = not deltabooleanomg
+			Toggle(deltabooleanomg)
 		end
 	end)
+	
+	task.delay(1.2, function()
+		ReopenButton.Visible = true
+	end)
+	
 	return ReopenButton
 end
 
@@ -435,7 +440,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		if State then 
 			Main.Visible = true 
 			if WindowInit.ReopenButton then
-				WindowInit.ReopenButton.Visible = false 
+				WindowInit.ReopenButton.Visible = true 
 			end
 		else 
 			for _, Pallete in pairs(Screen:GetChildren()) do 
@@ -1984,8 +1989,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								})
 							keybindFlash:Play()
 
-							local connection
-							connection = Toggle.Keybind:GetPropertyChangedSignal("Text"):Connect(function()
+							local connection; connection = Toggle.Keybind:GetPropertyChangedSignal("Text"):Connect(function()
 								if Toggle.Keybind.Text ~= "[ ... ]" then
 									keybindFlash:Cancel()
 									Toggle.Keybind.TextTransparency = 0
