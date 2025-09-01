@@ -166,16 +166,17 @@ do
             end,
             Load = function(Idx: string, Data: any)
                 if shared.Anka.Elements[Idx] then 
-                    local colorData = Data.value
-                    if colorData and colorData.r and colorData.g and colorData.b then
+                    local colordata = Data.value
+                    if colordata and colordata.r and colordata.g and colordata.b then
                         DelayedCall(function()
-                            shared.Anka.Elements[Idx]:UpdateColor(Color3.new(colorData.r, colorData.g, colorData.b), colorData.a);
+                            local element = shared.Anka.Elements[Idx]
+                            element:UpdateColor(Color3.new(colordata.r, colordata.g, colordata.b), colordata.a)
                             if Data.rainbow then
-                                shared.Anka.Elements[Idx]:SetRainbow(true);
+                                element:SetRainbow(true)
                             end
                         end, 0.3)
-                    end;
-                end;
+                    end
+                end
             end,
         },
         TextBox = {
