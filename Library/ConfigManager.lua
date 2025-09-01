@@ -16,6 +16,7 @@ do
     ConfigManager.Folder = "Anka";
     ConfigManager.Ignore = {};
     ConfigManager.CurrentPlaceId = tostring(game.PlaceId);
+    ConfigManager.CurrentGameId = tostring(game.GameId);
     shared.Anka = shared.Anka or {};
     shared.Anka.Elements = shared.Anka.Elements or {};
 
@@ -267,7 +268,8 @@ do
         local Paths = {
             self.Folder,
             self.Folder .. "/settings",
-            self.Folder .. "/autoload"
+            self.Folder .. "/autoload",
+            self.Folder .. "/gameautoload"
         };
         for i = 1, #Paths do
             local Str = Paths[i];
@@ -319,6 +321,19 @@ do
         writefile(AutoloadFile, ConfigName);
     end;
 
+    function ConfigManager:GetGameAutoloadConfig()
+        local AutoloadFile = self.Folder .. "/gameautoload/" .. self.CurrentGameId .. ".txt";
+        if isfile(AutoloadFile) then
+            return readfile(AutoloadFile);
+        end;
+        return nil;
+    end;
+
+    function ConfigManager:SetGameAutoloadConfig(ConfigName: string)
+        local AutoloadFile = self.Folder .. "/gameautoload/" .. self.CurrentGameId .. ".txt";
+        writefile(AutoloadFile, ConfigName);
+    end;
+
     function ConfigManager:GetGlobalAutoloadConfig()
         if isfile(self.Folder .. "/settings/autoload.txt") then
             return readfile(self.Folder .. "/settings/autoload.txt");
@@ -339,6 +354,16 @@ do
                 return;
             else
                 self.Window:Notify("Warning", "Failed to load place-specific autoload config: " .. Err, 5);
+            end;
+        end;
+        local GameAutoload = self:GetGameAutoloadConfig();
+        if GameAutoload then
+            local Success, Err = self:Load(GameAutoload);
+            if Success then
+                self.Window:Notify("Success", string.format("Auto loaded game-specific config %q (Game ID: %s)", GameAutoload, self.CurrentGameId), 5);
+                return;
+            else
+                self.Window:Notify("Warning", "Failed to load game-specific autoload config: " .. Err, 5);
             end;
         end;
         local GlobalAutoload = self:GetGlobalAutoloadConfig();
@@ -411,6 +436,14 @@ do
             self.Window:Notify("Success", string.format("Set %q as autoload config for Place ID %s", Name, self.CurrentPlaceId), 5);
         end);
 
+        Section:CreateButton("Set game autoload", function()
+            local Name = ConfigList:GetOption();
+            if not Name then return self.Window:Notify("Warning", "Please select a config", 5) end;
+            self:SetGameAutoloadConfig(Name);
+            self.GameAutoloadLabel:UpdateText("Game autoload (" .. self.CurrentGameId .. "): " .. Name);
+            self.Window:Notify("Success", string.format("Set %q as autoload config for Game ID %s", Name, self.CurrentGameId), 5);
+        end);
+
         Section:CreateButton("Set global autoload", function()
             local Name = ConfigList:GetOption();
             if not Name then return self.Window:Notify("Warning", "Please select a config", 5) end;
@@ -442,10 +475,15 @@ do
         end);
 
         self.PlaceAutoloadLabel = Section:CreateLabel("Place autoload (" .. self.CurrentPlaceId .. "): none", true);
+        self.GameAutoloadLabel = Section:CreateLabel("Game autoload (" .. self.CurrentGameId .. "): none", true);
         self.GlobalAutoloadLabel = Section:CreateLabel("Global autoload: none", true);
         local PlaceAutoload = self:GetPlaceAutoloadConfig();
         if PlaceAutoload then
             self.PlaceAutoloadLabel:UpdateText("Place autoload (" .. self.CurrentPlaceId .. "): " .. PlaceAutoload);
+        end;
+        local GameAutoload = self:GetGameAutoloadConfig();
+        if GameAutoload then
+            self.GameAutoloadLabel:UpdateText("Game autoload (" .. self.CurrentGameId .. "): " .. GameAutoload);
         end;
         local GlobalAutoload = self:GetGlobalAutoloadConfig();
         if GlobalAutoload then
@@ -456,6 +494,7 @@ do
             ConfigList.UniqueID, 
             ConfigName.UniqueID,
             self.PlaceAutoloadLabel.UniqueID,
+            self.GameAutoloadLabel.UniqueID,
             self.GlobalAutoloadLabel.UniqueID
         });
     end;
