@@ -232,13 +232,15 @@ end
 local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Color3}, Toggle: (boolean?) -> ())
 	if not IsMobile then return nil end
 
+	local aakdkakak = 10
 	local ReopenButton = Instance.new("Frame")
 	ReopenButton.Name = "ReopenButton"
 	ReopenButton.Parent = Screen
 	ReopenButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 	ReopenButton.Size = UDim2.new(0, 45, 0, 45)
 	ReopenButton.Position = UDim2.new(0.85, 50, 0.8, -200)
-	ReopenButton.Visible = true
+	ReopenButton.Visible = false
+	ReopenButton.ZIndex = aakdkakak
 	local borderFrame1 = Instance.new("Frame")
 	borderFrame1.Name = "BorderFrame1"
 	borderFrame1.Size = UDim2.new(1, -2, 1, -2)
@@ -246,6 +248,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	borderFrame1.BackgroundColor3 = Color3.fromRGB(52, 53, 52)
 	borderFrame1.BorderSizePixel = 0
 	borderFrame1.Parent = ReopenButton
+	borderFrame1.ZIndex = aakdkakak + 1
 	local borderFrame2 = Instance.new("Frame")
 	borderFrame2.Name = "BorderFrame2"
 	borderFrame2.Size = UDim2.new(1, -2, 1, -2)
@@ -253,6 +256,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	borderFrame2.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
 	borderFrame2.BorderSizePixel = 0
 	borderFrame2.Parent = borderFrame1
+	borderFrame2.ZIndex = aakdkakak + 2
 	local borderFrame3 = Instance.new("Frame")
 	borderFrame3.Name = "BorderFrame3"
 	borderFrame3.Size = UDim2.new(1, -6, 1, -6)
@@ -260,6 +264,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	borderFrame3.BackgroundColor3 = Color3.fromRGB(52, 53, 52)
 	borderFrame3.BorderSizePixel = 0
 	borderFrame3.Parent = borderFrame2
+	borderFrame3.ZIndex = aakdkakak + 3
 	local innerFrame = Instance.new("Frame")
 	innerFrame.Name = "InnerFrame"
 	innerFrame.Size = UDim2.new(1, -2, 1, -2)
@@ -267,6 +272,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	innerFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 4)
 	innerFrame.BorderSizePixel = 0
 	innerFrame.Parent = borderFrame3
+	innerFrame.ZIndex = aakdkakak + 4
 	local frameGradient = Instance.new("UIGradient")
 	frameGradient.Name = "FrameGradient"
 	frameGradient.Rotation = 90
@@ -288,6 +294,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	gradientFrame.BackgroundColor3 = Config.Color
 	gradientFrame.BorderSizePixel = 0
 	gradientFrame.Parent = innerFrame
+	gradientFrame.ZIndex = aakdkakak + 6
 	local gradient = Instance.new("UIGradient")
 	gradient.Name = "TopGradient"
 	gradient.Color = ColorSequence.new{
@@ -305,6 +312,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	lineee.BackgroundTransparency = 0.2
 	lineee.BorderSizePixel = 0
 	lineee.Parent = innerFrame
+	lineee.ZIndex = aakdkakak + 8
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Name = "ButtonText"
 	textLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -318,6 +326,7 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	textLabel.TextXAlignment = Enum.TextXAlignment.Center
 	textLabel.TextYAlignment = Enum.TextYAlignment.Center
 	textLabel.Parent = innerFrame
+	textLabel.ZIndex = aakdkakak + 9
 	local textGradient = Instance.new("UIGradient")
 	textGradient.Name = "TextGradient"
 	textGradient.Color = ColorSequence.new({
@@ -331,21 +340,21 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	table.insert(Library.ColorTable, textLabel)
 	table.insert(Library.ColorTable, frameGradient)
 	table.insert(Library.ColorTable, gradient)
-	
+
 	makedraggable(ReopenButton, ReopenButton)
 	local deltabooleanomg = false
-	
+
 	innerFrame.InputEnded:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.Touch or Input.UserInputType == Enum.UserInputType.MouseButton1 then
 			deltabooleanomg = not deltabooleanomg
 			Toggle(deltabooleanomg)
 		end
 	end)
-	
-	task.delay(1.2, function()
+
+	task.delay(2, function()
 		ReopenButton.Visible = true
 	end)
-	
+
 	return ReopenButton
 end
 
