@@ -2087,27 +2087,27 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					return KeybindObject
 				end
 
-    			function ToggleInit:SetVisible(Visible: boolean)
-        			Toggle.Visible = Visible
-    			end
+				function ToggleInit:SetVisible(Visible: boolean)
+					Toggle.Visible = Visible
+				end
 
-    			function ToggleInit:IsVisible(): boolean
-       	 			return Toggle.Visible
-    			end
+				function ToggleInit:IsVisible(): boolean
+					return Toggle.Visible
+				end
 
-    			function ToggleInit:ToggleVisibility()
-        			Toggle.Visible = not Toggle.Visible
-        			return Toggle.Visible
-    			end
+				function ToggleInit:ToggleVisibility()
+					Toggle.Visible = not Toggle.Visible
+					return Toggle.Visible
+				end
 
-    			Toggle.Title.TextWrapped = WrapText or false
-    			if WrapText then
-        			Toggle.Title.AutomaticSize = Enum.AutomaticSize.Y
-        			Toggle.Size = UDim2.new(1, -10, 0, 0)
-        			Toggle.AutomaticSize = Enum.AutomaticSize.Y
-    			else
-        			Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
-    			end
+				Toggle.Title.TextWrapped = WrapText or false
+				if WrapText then
+					Toggle.Title.AutomaticSize = Enum.AutomaticSize.Y
+					Toggle.Size = UDim2.new(1, -10, 0, 0)
+					Toggle.AutomaticSize = Enum.AutomaticSize.Y
+				else
+					Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
+				end
 
 				ToggleInit.Type = "Toggle"
 				ToggleInit.UniqueID = UniqueID
@@ -2797,29 +2797,431 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				shared.Anka.Elements[UniqueID] = DropdownInit
 				return DropdownInit
 			end
-
-			function SectionInit:CreateColorpicker(Name: string, Callback: (Color: Color3, Transparency: number?) -> (), IsAccentColorpicker: boolean?, WrapText: boolean?): Element
+			
+			-- its so skidded i just gived up
+			function SectionInit:CreateColorpicker(Name: string, Callback: (Color: Color3, Transparency: number?) -> (), IsAccentColorpicker: boolean?, WrapText: boolean?, AttachToToggle: Element?): Element
 				local ColorpickerInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
 				local Colorpicker = Folder.Colorpicker:Clone()
 				local Pallete = Folder.Palette:Clone()
+				Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
+
+				if AttachToToggle and AttachToToggle.Type == "Toggle" then
+					local ToggleFrame = nil
+					for _, child in pairs(Section.Container:GetChildren()) do
+						if child.Name == AttachToToggle.UniqueID:gsub(" %- %d+", "") .. " T" then
+							ToggleFrame = child
+							break
+						end
+					end
+
+					if ToggleFrame then
+						local existingIndicators = 0
+						for _, child in pairs(ToggleFrame:GetChildren()) do
+							if child.Name == "ColorIndicator" then
+								existingIndicators = existingIndicators + 1
+							end
+						end
+
+						local ColorIndicator = Instance.new("Frame")
+						ColorIndicator.Name = "ColorIndicator"
+						ColorIndicator.Size = UDim2.new(0, 16, 0, 8)
+						local baseX = ToggleFrame.Title.TextBounds.X + 20
+						local spacing = 20
+						ColorIndicator.Position = UDim2.new(0, baseX + (existingIndicators * spacing), 0.5, 2)
+						ColorIndicator.AnchorPoint = Vector2.new(0, 0.5)
+						ColorIndicator.BackgroundColor3 = Config.Color or Color3.fromRGB(0, 162, 255)
+						ColorIndicator.BorderSizePixel = 0
+						ColorIndicator.BorderColor3 = Color3.fromRGB(0, 0, 0)
+						ColorIndicator.Parent = ToggleFrame
+						ColorIndicator.ZIndex = 3
+
+						local ColorGradient = Instance.new("UIGradient")
+						ColorGradient.Name = "Gradient"
+						ColorGradient.Rotation = 90
+						ColorGradient.Color = ColorSequence.new{
+							ColorSequenceKeypoint.new(0.000, Color3.fromRGB(255, 255, 255)),
+							ColorSequenceKeypoint.new(1.000, Color3.fromRGB(182, 182, 182))
+						}
+						ColorGradient.Parent = ColorIndicator
+
+						local GlowFrame = Instance.new("Frame")
+						GlowFrame.Name = "GlowEffect"
+						GlowFrame.Size = UDim2.new(1, 2, 1, 2)
+						GlowFrame.Position = UDim2.new(0, -1, 0, -1)
+						GlowFrame.BackgroundColor3 = ColorIndicator.BackgroundColor3
+						GlowFrame.BackgroundTransparency = 0.8
+						GlowFrame.BorderSizePixel = 0
+						GlowFrame.Parent = ColorIndicator
+						GlowFrame.ZIndex = ColorIndicator.ZIndex - 1
+
+						Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
+						Pallete.Parent = Screen
+						Pallete.Visible = false
+
+						local RainbowToggle = Instance.new("TextButton")
+						RainbowToggle.Name = "RainbowToggle"
+						RainbowToggle.Parent = Pallete
+						RainbowToggle.AnchorPoint = Vector2.new(1, 0)
+						RainbowToggle.Size = UDim2.new(0, 20, 0, 20)
+						RainbowToggle.Position = UDim2.new(1, 25, 0, 2)
+						RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+						RainbowToggle.BorderSizePixel = 0
+						RainbowToggle.BorderColor3 = Color3.fromRGB(60, 60, 60)
+						RainbowToggle.Text = "-"
+						RainbowToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+						RainbowToggle.TextScaled = true
+						RainbowToggle.Font = Enum.Font.Gotham
+						RainbowToggle.ZIndex = 3
+
+						table.insert(Library.ColorTable, RainbowToggle)
+						ColorpickerInit.RainbowToggle = RainbowToggle
+
+						local ColorTable = {Hue = 1, Saturation = 0, Value = 1}
+						local CurrentTransparency = 0
+						local ColorRender = nil
+						local HueRender = nil
+						local TransparencyRender = nil
+						local ColorpickerRender = nil
+						local RainbowRender = nil
+						local IsRainbowEnabled = false
+						local sh1tcon = nil
+
+						local GradientPalette = Pallete.GradientPalette
+						local ColorSlider = Pallete.ColorSlider
+						local TransparencySlider = Pallete.TransparencySlider
+						local ColorPreview = Pallete.ColorPreview
+						local InputBox = Pallete.InputFrame.InputBox
+						local Dot = GradientPalette.Dot
+
+						local function UpdateColor()
+							local currentColor = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
+							ColorIndicator.BackgroundColor3 = currentColor
+							ColorIndicator.BackgroundTransparency = CurrentTransparency
+							GlowFrame.BackgroundColor3 = currentColor
+							GradientPalette.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, 1, 1)
+							ColorPreview.BackgroundColor3 = currentColor
+							ColorPreview.BackgroundTransparency = CurrentTransparency
+							local r, g, b = math.round(currentColor.R * 255), math.round(currentColor.G * 255), math.round(currentColor.B * 255)
+							local alpha = math.round((1 - CurrentTransparency) * 255)
+							InputBox.PlaceholderText = string.format("RGBA: %d, %d, %d, %d", r, g, b, alpha)
+							Dot.Position = UDim2.new(ColorTable.Saturation, 0, 1 - ColorTable.Value, 0)
+							Callback(currentColor, CurrentTransparency)
+							if IsAccentColorpicker then
+								ChangeColor(currentColor, CurrentTransparency)
+							end
+						end
+
+						local function ihatemyself(position)
+							local palettepos = Pallete.AbsolutePosition
+							local palettesize = Pallete.AbsoluteSize
+							return position.X >= palettepos.X and position.X <= palettepos.X + palettesize.X and position.Y >= palettepos.Y and position.Y <= palettepos.Y + palettesize.Y
+						end
+
+						local function closePalette()
+							Pallete.Visible = false
+							if ColorpickerRender then
+								ColorpickerRender:Disconnect()
+								ColorpickerRender = nil
+							end
+							if sh1tcon then
+								sh1tcon:Disconnect()
+								sh1tcon = nil
+							end
+						end
+
+						local function blehh()
+							if sh1tcon then
+								sh1tcon:Disconnect()
+							end
+							sh1tcon = UserInputService.InputBegan:Connect(function(input, gp)
+								if not gp and Pallete.Visible then
+									local inputpos
+									if input.UserInputType == Enum.UserInputType.MouseButton1 then
+										inputpos = UserInputService:GetMouseLocation()
+									elseif input.UserInputType == Enum.UserInputType.Touch then
+										inputpos = input.Position
+									else
+										return
+									end
+									if not ihatemyself(inputpos) then
+										closePalette()
+									end
+								end
+							end)
+						end
+
+						RainbowToggle.MouseButton1Click:Connect(function()
+							IsRainbowEnabled = not IsRainbowEnabled
+							if IsRainbowEnabled then
+								RainbowToggle.BackgroundColor3 = Config.Color or Color3.fromRGB(0, 162, 255)
+								RainbowToggle.BackgroundTransparency = Config.Transparency or 0
+								RainbowToggle.Text = "+"
+								RainbowRender = RunService.PreRender:Connect(function()
+									ColorTable.Hue = (tick() * 0.5) % 1
+									ColorTable.Saturation = 1
+									ColorTable.Value = 1
+									UpdateColor()
+								end)
+							else
+								RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+								RainbowToggle.BackgroundTransparency = 0
+								RainbowToggle.Text = "-"
+								if RainbowRender then
+									RainbowRender:Disconnect()
+									RainbowRender = nil
+								end
+							end
+						end)
+
+						ColorIndicator.InputBegan:Connect(function(Input)
+							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+								if not Pallete.Visible then
+									ColorpickerRender = RunService.PreRender:Connect(function()
+										local pos = ColorIndicator.AbsolutePosition
+										Pallete.Position = UDim2.new(0, pos.X - 129, 0, pos.Y + 20)
+									end)
+									Pallete.Visible = true
+									blehh()
+								else
+									closePalette()
+								end
+							end
+						end)
+
+						ColorIndicator.MouseEnter:Connect(function()
+							TweenService:Create(GlowFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+								BackgroundTransparency = 0.4
+							}):Play()
+						end)
+
+						ColorIndicator.MouseLeave:Connect(function()
+							TweenService:Create(GlowFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+								BackgroundTransparency = 0.8
+							}):Play()
+						end)
+
+						local function getananddRelativePosition(input, guiObject)
+							local inputPos
+							if input.UserInputType == Enum.UserInputType.Touch then
+								inputPos = input.Position
+							else
+								inputPos = UserInputService:GetMouseLocation()
+							end
+							local guiPos = guiObject.AbsolutePosition
+							local guiSize = guiObject.AbsoluteSize
+							return Vector2.new(
+								(inputPos.X - guiPos.X) / guiSize.X,
+								(inputPos.Y - guiPos.Y) / guiSize.Y
+							)
+						end
+
+						local function fakuroblox(input, guiObject)
+							local mouse = UserInputService:GetMouseLocation()
+							return Vector2.new(
+								(mouse.X - guiObject.AbsolutePosition.X) / guiObject.AbsoluteSize.X,
+								((mouse.Y - 60) - guiObject.AbsolutePosition.Y) / guiObject.AbsoluteSize.Y
+							)
+						end
+
+						GradientPalette.InputBegan:Connect(function(Input)
+							if UserInputService:GetFocusedTextBox() == nil then
+								if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+									if IsRainbowEnabled then
+										IsRainbowEnabled = false
+										RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+										RainbowToggle.Text = "-"
+										if RainbowRender then RainbowRender:Disconnect() end
+									end
+									if ColorRender then ColorRender:Disconnect() end
+									ColorRender = RunService.PreRender:Connect(function()
+										local relativePos = fakuroblox(Input, GradientPalette)
+										local clampedX = math.clamp(relativePos.X, 0, 1)
+										local clampedY = math.clamp(relativePos.Y, 0, 1)
+										Dot.Position = UDim2.new(clampedX, 0, clampedY, 0)
+										ColorTable.Saturation = clampedX
+										ColorTable.Value = 1 - clampedY
+										UpdateColor()
+									end)
+								elseif Input.UserInputType == Enum.UserInputType.Touch then
+									if IsRainbowEnabled then
+										IsRainbowEnabled = false
+										RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+										RainbowToggle.Text = "-"
+										if RainbowRender then RainbowRender:Disconnect() end
+									end
+									if ColorRender then ColorRender:Disconnect() end
+									ColorRender = RunService.PreRender:Connect(function()
+										local relativePos = getananddRelativePosition(Input, GradientPalette)
+										local clampedX = math.clamp(relativePos.X, 0, 1)
+										local clampedY = math.clamp(relativePos.Y, 0, 1)
+										Dot.Position = UDim2.new(clampedX, 0, clampedY, 0)
+										ColorTable.Saturation = clampedX
+										ColorTable.Value = 1 - clampedY
+										UpdateColor()
+									end)
+								end
+							end
+						end)
+
+						GradientPalette.InputEnded:Connect(function(Input)
+							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+								if ColorRender then ColorRender:Disconnect() end
+							end
+						end)
+
+						ColorSlider.InputBegan:Connect(function(Input)
+							if UserInputService:GetFocusedTextBox() == nil then
+								if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+									if IsRainbowEnabled then
+										IsRainbowEnabled = false
+										RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+										RainbowToggle.Text = "-"
+										if RainbowRender then
+											RainbowRender:Disconnect()
+											RainbowRender = nil
+										end
+									end
+									if HueRender then HueRender:Disconnect() end
+									HueRender = RunService.PreRender:Connect(function()
+										local relativePos = getananddRelativePosition(Input, ColorSlider)
+										ColorTable.Hue = 1 - math.clamp(relativePos.X, 0, 1)
+										UpdateColor()
+									end)
+								end
+							end
+						end)
+
+						ColorSlider.InputEnded:Connect(function(Input)
+							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+								if HueRender then HueRender:Disconnect() end
+							end
+						end)
+
+						TransparencySlider.InputBegan:Connect(function(Input)
+							if UserInputService:GetFocusedTextBox() == nil then
+								if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+									if TransparencyRender then TransparencyRender:Disconnect() end
+									TransparencyRender = RunService.PreRender:Connect(function()
+										local relativePos = getananddRelativePosition(Input, TransparencySlider)
+										CurrentTransparency = math.clamp(relativePos.X, 0, 1)
+										UpdateColor()
+									end)
+								end
+							end
+						end)
+
+						TransparencySlider.InputEnded:Connect(function(Input)
+							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+								if TransparencyRender then TransparencyRender:Disconnect() end
+							end
+						end)
+
+						local function UpdateTransparencySlider()
+							TransparencySlider.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
+						end
+
+						InputBox.FocusLost:Connect(function(Enter)
+							if Enter then
+								local input = string.gsub(InputBox.Text, " ", "")
+								local colorValues = string.split(input, ",")
+								if #colorValues >= 3 then
+									local r = math.clamp(tonumber(colorValues[1]) or 255, 0, 255)
+									local g = math.clamp(tonumber(colorValues[2]) or 0, 0, 255)
+									local b = math.clamp(tonumber(colorValues[3]) or 0, 0, 255)
+									local a = 255
+									if #colorValues >= 4 then
+										a = math.clamp(tonumber(colorValues[4]) or 255, 0, 255)
+									end
+									local newColor = Color3.fromRGB(r, g, b)
+									local newTransparency = 1 - (a / 255)
+									ColorpickerInit:UpdateColor(newColor, newTransparency)
+								end
+								InputBox.Text = ""
+							end
+						end)
+
+						function ColorpickerInit:UpdateColor(Color, Transparency)
+							Transparency = Transparency or 0
+							if IsRainbowEnabled then
+								IsRainbowEnabled = false
+								RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+								RainbowToggle.BackgroundTransparency = 0
+								RainbowToggle.Text = "-"
+								if RainbowRender then
+									RainbowRender:Disconnect()
+									RainbowRender = nil
+								end
+							end
+							local Hue, Saturation, Value = Color:ToHSV()
+							ColorTable = {Hue = Hue, Saturation = Saturation, Value = Value}
+							CurrentTransparency = Transparency
+							UpdateColor()
+							UpdateTransparencySlider()
+						end
+
+						function ColorpickerInit:GetValue()
+							return ColorIndicator.BackgroundColor3, CurrentTransparency
+						end
+
+						function ColorpickerInit:GetColor()
+							return ColorIndicator.BackgroundColor3
+						end
+
+						function ColorpickerInit:GetTransparency()
+							return CurrentTransparency
+						end
+
+						function ColorpickerInit:SetVisible(Visible: boolean)
+							ColorIndicator.Visible = Visible
+						end
+
+						function ColorpickerInit:IsVisible(): boolean
+							return ColorIndicator.Visible
+						end
+
+						function ColorpickerInit:ToggleVisibility()
+							ColorIndicator.Visible = not ColorIndicator.Visible
+							return ColorIndicator.Visible
+						end
+
+						function ColorpickerInit:ClosePallete()
+							closePalette()
+						end
+
+						function ColorpickerInit:SetTransparency(transparency)
+							CurrentTransparency = math.clamp(transparency, 0, 1)
+							UpdateColor()
+						end
+
+						UpdateColor()
+						UpdateTransparencySlider()
+
+						ColorpickerInit.Type = "AttachedColorPicker"
+						ColorpickerInit.UniqueID = UniqueID
+						ColorpickerInit.IsAccentColorpicker = IsAccentColorpicker or false
+						shared.Anka.Elements[UniqueID] = ColorpickerInit
+
+						return ColorpickerInit
+					end
+				end
 
 				Colorpicker.Name = Name .. " CP"
 				Colorpicker.Parent = Section.Container
 				Colorpicker.Title.Text = Name
 				Colorpicker.Size = UDim2.new(1, -10, 0, Colorpicker.Title.TextBounds.Y + 5)
 
-				Pallete.Name = Name .. " P"
+				Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
 				Pallete.Parent = Screen
 				Pallete.Visible = false
 
 				local RainbowToggle = Instance.new("TextButton")
 				RainbowToggle.Name = "RainbowToggle"
-				RainbowToggle.Parent = Colorpicker
-				RainbowToggle.AnchorPoint = Vector2.new(1, 0.5)
-				RainbowToggle.Size = UDim2.new(0, 20, 0, 10)
-				RainbowToggle.Position = UDim2.new(1, -30, 0.5, 0)
+				RainbowToggle.Parent = Pallete
+				RainbowToggle.AnchorPoint = Vector2.new(1, 0)
+				RainbowToggle.Size = UDim2.new(0, 20, 0, 20)
+				RainbowToggle.Position = UDim2.new(1, 25, 0, 2)
 				RainbowToggle.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 				RainbowToggle.BorderSizePixel = 0
 				RainbowToggle.BorderColor3 = Color3.fromRGB(60, 60, 60)
@@ -3198,227 +3600,49 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 				return ColorpickerInit
 			end
-			
-			function SectionInit:CreateScriptDisplay(Name: string, ScriptContent: string, WrapText: boolean?): Element
-				local ScriptDisplayInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
 
-				local ScriptFrame = Instance.new("Frame")
-				ScriptFrame.Name = Name .. " SD"
-				ScriptFrame.Parent = Section.Container
-				ScriptFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-				ScriptFrame.BorderSizePixel = 0
-				ScriptFrame.Size = UDim2.new(1, -10, 0, 250)
-				ScriptFrame.AutomaticSize = Enum.AutomaticSize.Y
-				ScriptFrame.ClipsDescendants = true
-				ScriptFrame.ZIndex = 3
-
-				local FrameStroke = Instance.new("UIStroke")
-				FrameStroke.Parent = ScriptFrame
-				FrameStroke.Color = Color3.fromRGB(60, 60, 60)
-				FrameStroke.Thickness = 1
-				FrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-				local TitleBar = Instance.new("Frame")
-				TitleBar.Name = "TitleBar"
-				TitleBar.Parent = ScriptFrame
-				TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-				TitleBar.Size = UDim2.new(1, 0, 0, 25)
-				TitleBar.ZIndex = 3
-				TitleBar.BorderSizePixel = 0
-
-				local TitleLabel = Instance.new("TextLabel")
-				TitleLabel.Name = "Title"
-				TitleLabel.Parent = TitleBar
-				TitleLabel.BackgroundTransparency = 1
-				TitleLabel.Text = Name
-				TitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-				TitleLabel.Font = Enum.Font.Code
-				TitleLabel.TextSize = 14
-				TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-				TitleLabel.Position = UDim2.new(0, 8, 0, 0)
-				TitleLabel.Size = UDim2.new(1, -50, 1, 0)
-				TitleLabel.ZIndex = 3
-
-				local CopyButton = Instance.new("TextButton")
-				CopyButton.Name = "CopyButton"
-				CopyButton.Parent = TitleBar
-				CopyButton.BackgroundTransparency = 1
-				CopyButton.Size = UDim2.new(0, 40, 1, 0)
-				CopyButton.Position = UDim2.new(1, -45, 0, 0)
-				CopyButton.Text = "Copy"
-				CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-				CopyButton.Font = Enum.Font.Code
-				CopyButton.TextSize = 12
-				CopyButton.TextXAlignment = Enum.TextXAlignment.Right
-				CopyButton.ZIndex = 3
-
-				CopyButton.MouseEnter:Connect(function()
-					CopyButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-				end)
-
-				CopyButton.MouseLeave:Connect(function()
-					CopyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-				end)
-
-				CopyButton.Activated:Connect(function()
-					local copy = setclipboard or print
-					copy(ScriptContent)
-					local tt = CopyButton.Text
-					CopyButton.Text = "Copied!"
-					task.wait(.3)
-					CopyButton.Text = tt
-				end)
-
-				local ScrollFrame = Instance.new("ScrollingFrame")
-				ScrollFrame.Name = "Content"
-				ScrollFrame.Parent = ScriptFrame
-				ScrollFrame.BorderSizePixel = 0
-				ScrollFrame.BackgroundTransparency = 1
-				ScrollFrame.Size = UDim2.new(1, 0, 1, -25)
-				ScrollFrame.Position = UDim2.new(0, 0, 0, 25)
-				ScrollFrame.ScrollBarThickness = 5
-				ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-				ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-				ScrollFrame.ZIndex = 3
-
-				local ContentLabel = Instance.new("TextLabel")
-				ContentLabel.Name = "ScriptText"
-				ContentLabel.Parent = ScrollFrame
-				ContentLabel.BackgroundTransparency = 1
-				ContentLabel.RichText = true
-				ContentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-				ContentLabel.Font = Enum.Font.Code
-				ContentLabel.TextSize = 12
-				ContentLabel.TextXAlignment = Enum.TextXAlignment.Left
-				ContentLabel.TextYAlignment = Enum.TextYAlignment.Top
-				ContentLabel.TextWrapped = WrapText or false
-				ContentLabel.ZIndex = 3
-				ContentLabel.Text = ScriptContent
-
-				if WrapText then
-					ContentLabel.Size = UDim2.new(1, -10, 0, 0)
-					ContentLabel.AutomaticSize = Enum.AutomaticSize.Y
-				else
-					ContentLabel.Size = UDim2.new(1, -10, 0, ContentLabel.TextBounds.Y)
-				end
-				
-				local function SyntaxHighlight(code)
-					local function richtextr(str)
-						return str:gsub("[&<>]", {
-							["&"] = "&amp;",
-							["<"] = "&lt;",
-							[">"] = "&gt;"
-						})
-					end
-					code = richtextr(code)
-					local keywords = {
-						"and", "break", "do", "else", "elseif", "end",
-						"false", "for", "function", "goto", "if", "in", 
-						"local", "nil", "not", "or", "repeat", "return", 
-						"then", "true", "until", "while"
-					}
-					for _, keyword in ipairs(keywords) do
-						code = code:gsub("(%f[%w_])(" .. keyword .. ")(%f[^%w_])", "%1<font color='#569CD6'>%2</font>%3")
-					end
-					code = code:gsub("(%f[%w_])(%d+%.?%d*)(%f[^%w_])","%1<font color='#B5CEA8'>%2</font>%3")
-					code = code:gsub('("(\\"|[^"])*")', "<font color='#CE9178'>%1</font>")
-					code = code:gsub("('(\\'|[^'])*')", "<font color='#CE9178'>%1</font>")
-					code = code:gsub("(%-%-[^\n]*)", "<font color='#57A64A'>%1</font>")
-					code = code:gsub("(%-%-%[%[.-%]%])", "<font color='#57A64A'>%1</font>")
-					code = code:gsub("(function%s+)([%w_%.]+)","%1<font color='#DCDCAA'>%2</font>")
-					return code
-				end
-				
-				ContentLabel.Text = SyntaxHighlight(ScriptContent)
-				
-				ContentLabel:GetPropertyChangedSignal("TextBounds"):Connect(function()
-					ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ContentLabel.TextBounds.Y + 10)
-				end)
-
-				function ScriptDisplayInit:UpdateText(NewText)
-					ScriptContent = NewText
-					ContentLabel.Text = SyntaxHighlight(ScriptContent)
-				end
-
-				function ScriptDisplayInit:GetText()
-					return ScriptContent
-				end
-
-				function ScriptDisplayInit:SetVisible(Visible)
-					ScriptFrame.Visible = Visible
-				end
-
-				function ScriptDisplayInit:IsVisible()
-					return ScriptFrame.Visible
-				end
-
-				function ScriptDisplayInit:ToggleVisibility()
-					ScriptFrame.Visible = not ScriptFrame.Visible
-					return ScriptFrame.Visible
-				end
-
-				function ScriptDisplayInit:SetWrapText(Wrap)
-					ContentLabel.TextWrapped = Wrap
-					if Wrap then
-						ContentLabel.AutomaticSize = Enum.AutomaticSize.Y
-						ContentLabel.Size = UDim2.new(1, -10, 0, 0)
-					else
-						ContentLabel.AutomaticSize = Enum.AutomaticSize.None
-						ContentLabel.Size = UDim2.new(1, -10, 0, ContentLabel.TextBounds.Y)
-					end
-				end
-
-				ScriptDisplayInit.Type = "ScriptDisplay"
-				ScriptDisplayInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = ScriptDisplayInit
-
-				return ScriptDisplayInit
-			end
-			
 			function SectionInit:CreateDivider(): Element
-    			local DividerInit: Element = {}
-    			shared.Anka.ElementCounter += 1
-    			local UniqueID = "Divider - " .. shared.Anka.ElementCounter
-    
-    			local Divider = Instance.new("Frame")
-    			Divider.Name = "Divider"
-    			Divider.Parent = Section.Container
-    			Divider.BackgroundTransparency = 1
-    			Divider.Size = UDim2.new(1, -10, 0, 5)
-    			Divider.ZIndex = 3
-    
-    			local Line = Instance.new("Frame")
-    			Line.Name = "Line"
-    			Line.Parent = Divider
-    			Line.Size = UDim2.new(1, 0, 1, 0)
-    			Line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    			Line.BorderSizePixel = 0
-    			Line.ZIndex = 3
+				local DividerInit: Element = {}
+				shared.Anka.ElementCounter += 1
+				local UniqueID = "Divider - " .. shared.Anka.ElementCounter
 
-    			function DividerInit:SetVisible(Visible: boolean)
-        			Divider.Visible = Visible
-    			end
+				local Divider = Instance.new("Frame")
+				Divider.Name = "Divider"
+				Divider.Parent = Section.Container
+				Divider.BackgroundTransparency = 1
+				Divider.Size = UDim2.new(1, -10, 0, 5)
+				Divider.ZIndex = 3
 
-    			function DividerInit:IsVisible(): boolean
-        			return Divider.Visible
-    			end
+				local Line = Instance.new("Frame")
+				Line.Name = "Line"
+				Line.Parent = Divider
+				Line.Size = UDim2.new(1, 0, 1, 0)
+				Line.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+				Line.BorderSizePixel = 0
+				Line.ZIndex = 3
 
-    			function DividerInit:ToggleVisibility()
-       				Divider.Visible = not Divider.Visible
-        			return Divider.Visible
-    			end
+				function DividerInit:SetVisible(Visible: boolean)
+					Divider.Visible = Visible
+				end
 
-    			function DividerInit:SetColor(Color: Color3)
-        			Line.BackgroundColor3 = Color
-    			end
+				function DividerInit:IsVisible(): boolean
+					return Divider.Visible
+				end
 
-    			DividerInit.Type = "Divider"
-    			DividerInit.UniqueID = UniqueID
-    			shared.Anka.Elements[UniqueID] = DividerInit
-    
-    			return DividerInit
+				function DividerInit:ToggleVisibility()
+					Divider.Visible = not Divider.Visible
+					return Divider.Visible
+				end
+
+				function DividerInit:SetColor(Color: Color3)
+					Line.BackgroundColor3 = Color
+				end
+
+				DividerInit.Type = "Divider"
+				DividerInit.UniqueID = UniqueID
+				shared.Anka.Elements[UniqueID] = DividerInit
+
+				return DividerInit
 			end
 
 			return SectionInit
@@ -3446,32 +3670,32 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	function Library:GetTextBounds(Text, Font, Size, Resolution)
 		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
 		return Bounds.X, Bounds.Y
-	end -- from linoria library https://github.com/violin-suzutsuki/LinoriaLib
+	end
 
 	function Library:Hud()
 		local HudInit = {}
 		local Hud = Folder.Hud:Clone()
-		local InfoText = Hud.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.InfoText
+		local InfoText = Hud.InfoText
 		Hud.Parent = Screen
-
 		local padding = {
 			right = 10,
 			bottom = 10, 
 			left = 10,
 			top = 10
 		}
-
 		Hud.AnchorPoint = Vector2.new(1, 0)
 		Hud.Position = UDim2.new(1, -padding.right, 0, padding.top)
 		Hud.Visible = true
 
-		local function eeee()
+		table.insert(Library.ColorTable, Hud.TopLine)
+
+		local function updateSize()
 			local text = InfoText.Text
 			if text and text ~= "" then
-				local X, Y = Library:GetTextBounds(text, InfoText.Font, InfoText.TextSize)
+				local X, Y = Library:GetTextBounds(text, InfoText.Font, InfoText.TextSize, Vector2.new(10000, 10000))
 				Hud.Size = UDim2.new(
 					0, X + padding.left + padding.right, 
-					0, (Y * 1.5) + padding.top + padding.bottom
+					0, (Y * 1.2) + padding.top + padding.bottom
 				)
 				InfoText.Position = UDim2.new(0, padding.left, 0, padding.top)
 				InfoText.Size = UDim2.new(1, -(padding.left + padding.right), 1, -(padding.top + padding.bottom))
@@ -3480,7 +3704,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 		function HudInit:SetText(text)
 			InfoText.Text = tostring(text)
-			eeee()
+			updateSize()
 			return self
 		end
 
@@ -3504,13 +3728,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 		function HudInit:SetTextSize(size)
 			InfoText.TextSize = size
-			eeee()
+			updateSize()
 			return self
 		end
 
-		function HudInit:SetFont(font)
-			InfoText.Font = font
-			eeee()
+		function HudInit:SetFont(fe)
+			InfoText.Font = fe
+			updateSize()
 			return self
 		end
 
@@ -3519,12 +3743,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			padding.bottom = bottom or padding.bottom
 			padding.left = left or padding.left
 			padding.top = top or padding.top
-			eeee()
+			Hud.Position = UDim2.new(1, -padding.right, 0, padding.top)
+			updateSize()
 			return self
 		end
 
-		eeee()
-
+		updateSize()
 		return HudInit
 	end
 
@@ -3539,7 +3763,85 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	function Library:ChangeToggleKeybind(newbindomg)
 		uitoggle = newbindomg
 	end
+	
+	local function cparticle()
+		local particle = Instance.new("Frame")
+		particle.Size = UDim2.new(0, 2, 0, 2)
+		particle.Position = UDim2.new(math.random(), 0, 0, -10)
+		particle.BackgroundColor3 = Config.Color
+		particle.BorderSizePixel = 0
+		particle.Parent = WindowInit.particlesFrame
+		particle.ZIndex = 20
+		table.insert(WindowInit.particles, {
+			frame = particle,
+			velocity = Vector2.new(math.random(-20, 20) * 0.01, math.random(30, 80) * 0.01),
+			life = 0
+		})
+	end
 
+	local function uparticle(deltaTime)
+		for i = #WindowInit.particles, 1, -1 do
+			local particle = WindowInit.particles[i]
+			particle.life = particle.life + deltaTime
+			if particle.life > 3 then
+				particle.frame:Destroy()
+				table.remove(WindowInit.particles, i)
+			else
+				local pos = particle.frame.Position
+				particle.frame.Position = UDim2.new(
+					pos.X.Scale + particle.velocity.X * deltaTime,
+					pos.X.Offset,
+					pos.Y.Scale + particle.velocity.Y * deltaTime,
+					pos.Y.Offset
+				)
+				local alpha = 1 - (particle.life / 3)
+				particle.frame.BackgroundTransparency = 1 - alpha
+			end
+		end
+	end
+	
+	function WindowInit:CreateParticles(enableParticles)
+		if enableParticles then
+			if not self.particles then
+				self.particles = {}
+			end
+
+			if not self.particlesFrame then
+				self.particlesFrame = Instance.new("Frame")
+				self.particlesFrame.Name = "ParticlesFrame"
+				self.particlesFrame.Size = UDim2.new(1, 0, 1, 0)
+				self.particlesFrame.BackgroundTransparency = 1
+				self.particlesFrame.Parent = Screen.Main
+			end
+
+			if not self.particleConnection then
+				self.particleConnection = RunService.Heartbeat:Connect(function(deltaTime)
+					if math.random() < 0.1 then
+						cparticle()
+					end
+					uparticle(deltaTime)
+				end)
+			end
+		else
+			if self.particleConnection then
+				self.particleConnection:Disconnect()
+				self.particleConnection = nil
+			end
+
+			if self.particlesFrame then
+				self.particlesFrame:Destroy()
+				self.particlesFrame = nil
+			end
+
+			if self.particles then
+				for _, particle in ipairs(self.particles) do
+					particle.frame:Destroy()
+				end
+				self.particles = {}
+			end
+		end
+	end
+	
 	return WindowInit
 end
 
