@@ -123,7 +123,6 @@ if Sections.OtherSettings then
     local accentcolorpicker = Sections.OtherSettings:CreateColorpicker(
         "UI Theme Color",
         function(color, transparency)
-            print("UI theme updated:", color, "transparency:", transparency)
         end,
         true
     )
