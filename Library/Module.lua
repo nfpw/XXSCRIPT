@@ -3670,7 +3670,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	function Library:GetTextBounds(Text, Font, Size, Resolution)
 		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
 		return Bounds.X, Bounds.Y
-	end
+	end -- from linoria library https://github.com/violin-suzutsuki/LinoriaLib
 
 	function Library:Hud()
 		local HudInit = {}
