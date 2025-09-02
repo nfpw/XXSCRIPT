@@ -3685,7 +3685,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	function Library:Hud()
 		local HudInit = {}
 		local Hud = Folder.Hud:Clone()
-		local InfoText = Hud.InfoText
+		local InfoText = Hud.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.InfoText
 		Hud.Parent = Screen
 		local padding = {
 			right = 10,
@@ -3697,7 +3697,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		Hud.Position = UDim2.new(1, -padding.right, 0, padding.top)
 		Hud.Visible = true
 
-		table.insert(Library.ColorTable, Hud.TopLine)
+		table.insert(Library.ColorTable, Hud.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.GradientFrame)
 
 		local function updateSize()
 			local text = InfoText.Text
