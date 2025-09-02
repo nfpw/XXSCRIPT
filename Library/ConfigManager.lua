@@ -180,38 +180,6 @@ do
                 end
             end,
         },
-        AttachedColorPicker = {
-            Save = function(Idx: string, Object: Element)
-                local color, transparency = Object:GetValue()
-                return { 
-                    type = "AttachedColorPicker", 
-                    idx = Idx, 
-                    value = {
-                        r = color.R,
-                        g = color.G,
-                        b = color.B,
-                        a = transparency or 0
-                    },
-                    rainbow = Object:IsRainbowEnabled and Object:IsRainbowEnabled() or false
-                };
-            end,
-            Load = function(Idx: string, Data: any)
-                if shared.Anka.Elements[Idx] then 
-                    local colordata = Data.value
-                    if colordata and colordata.r and colordata.g and colordata.b then
-                        DelayedCall(function()
-                            local element = shared.Anka.Elements[Idx]
-                            if element and element.UpdateColor then
-                                element:UpdateColor(Color3.new(colordata.r, colordata.g, colordata.b), colordata.a)
-                                if Data.rainbow and element.SetRainbow then
-                                    element:SetRainbow(true)
-                                end
-                            end
-                        end, 0.3)
-                    end
-                end
-            end,
-        },
         TextBox = {
             Save = function(Idx: string, Object: Element)
                 return { 
