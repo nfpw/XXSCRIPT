@@ -18,7 +18,7 @@ local TextService = getservice("TextService")
 local RunService = getservice("RunService")
 local Players = getservice("Players")
 
-local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IsMobile = UserInputService.TouchEnabled -- and not UserInputService.KeyboardEnabled removed this bc emulator support
 shared.Anka = shared.Anka or {}
 shared.Anka.Elements = shared.Anka.Elements or {}
 shared.Anka.ElementCounter = 0
