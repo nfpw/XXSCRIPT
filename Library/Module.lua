@@ -3195,6 +3195,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							UpdateColor()
 						end
 
+						function ColorpickerInit:IsRainbowEnabled()
+							return IsRainbowEnabled
+						end
+
+						function ColorpickerInit:SetRainbow(state)
+							if state ~= IsRainbowEnabled then
+								RainbowToggle.MouseButton1Click:Fire()
+							end
+						end
+
 						UpdateColor()
 						UpdateTransparencySlider()
 
@@ -3670,7 +3680,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	function Library:GetTextBounds(Text, Font, Size, Resolution)
 		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
 		return Bounds.X, Bounds.Y
-	end -- from linoria library https://github.com/violin-suzutsuki/LinoriaLib
+	end -- credits linoria library
 
 	function Library:Hud()
 		local HudInit = {}
