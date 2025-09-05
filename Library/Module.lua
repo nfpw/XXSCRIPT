@@ -500,8 +500,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		TweenService:Create(SearchBar, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
 	end))
 
-	makedraggable(Topbar, Main)
-
+	--makedraggable(Topbar, Main)
+	makedraggable(Main, Main)
+	
 	local Close = Topbar.Close
 	if IsMobile then
 		table.insert(Library.Connections, Close.InputBegan:Connect(function(Input)
