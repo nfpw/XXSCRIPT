@@ -6,7 +6,7 @@
 	i forgot to add this section but some stuff generated from ai bc im lazy ass (chat-gpt) but mostly i did the stuff used it for fixes
 ]]
 
-local Library = {Toggle = true, FirstTab = nil, TabCount = 0, ColorTable = {}, CurrentTab = nil, tick = tick(), Connections = {}, Flags = {}}
+local Library = {Toggle = true, FirstTab = nil, TabCount = 0, ColorTable = {}, CurrentTab = nil, tick = tick(), Connections = {}, flags = {}}
 local cloneref = cloneref or function(v) return v; end
 local function getservice(v) return cloneref(game:GetService(v)); end
 local http_request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request;
@@ -3863,18 +3863,17 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			--print("Disconnected " .. vvvvvxx .. " connections")
 			Library.Connections = {}
 		end
-		if Library.Flags then
+		if Library.flags then
 			local flagsdd = 0
-			for i, v in next, Library.Flags do
+			for i, v in next, Library.flags do
 				if v and v.Disconnect then
 					v:Disconnect()
-					Library.Flags[i] = nil
+					Library.flags[i] = nil
 					flagsdd += 1
 				end
 			end
 			--print("Disconnected " .. flagsdd .. " flag connections")
 		end
-
 		Library.ColorTable = {}
 		if shared.Anka then
 			shared.Anka.ElementCounter = 0
@@ -3883,7 +3882,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			Screen:Destroy()
 		end
 		Library.tick = nil
-		Library.Flags = nil
+		Library.flags = nil
 		--print("Library destroyed")
 	end
 
