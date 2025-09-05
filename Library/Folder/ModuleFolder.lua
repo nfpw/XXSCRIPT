@@ -661,12 +661,6 @@ G2L["37"]["Text"] = [[Option]];
 G2L["37"]["Name"] = [[Title]];
 G2L["37"]["Position"] = UDim2.new(0.5, 0, 0, 0);
 
--- ReplicatedStorage.Folder.Option.Gradient
-G2L["38"] = Instance.new("UIGradient", G2L["36"]);
-G2L["38"]["Rotation"] = 90;
-G2L["38"]["Name"] = [[Gradient]];
-G2L["38"]["Color"] = ColorSequence.new{ColorSequenceKeypoint.new(0.000, Color3.fromRGB(255, 255, 255)),ColorSequenceKeypoint.new(1.000, Color3.fromRGB(182, 182, 182))};
-
 -- ReplicatedStorage.Folder.Dropdown
 G2L["39"] = Instance.new("TextButton", G2L["1"]);
 G2L["39"]["TextStrokeTransparency"] = 0.75;
