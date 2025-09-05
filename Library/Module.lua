@@ -3864,15 +3864,20 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			Library.Connections = {}
 		end
 		if Library.flags then
-			local flagsdd = 0
-			for i, v in next, Library.flags do
-				if v and v.Disconnect then
-					v:Disconnect()
-					Library.flags[i] = nil
-					flagsdd += 1
-				end
-			end
-			--print("Disconnected " .. flagsdd .. " flag connections")
+    		local flagsdd = 0
+    		local function didcone(tbl)
+        		for i, v in next, tbl do
+            		if v and type(v) == "table" then
+                		didcone(v)
+            		elseif v and v.Disconnect then
+                		v:Disconnect()
+                		tbl[i] = nil
+                		flagsdd += 1
+            		end
+        		end
+    		end
+    		didcone(Library.flags)
+    		--print("Disconnected " .. flagsdd .. " flag connections")
 		end
 		Library.ColorTable = {}
 		if shared.Anka then
