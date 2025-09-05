@@ -6,7 +6,7 @@
 	i forgot to add this section but some stuff generated from ai bc im lazy ass (chat-gpt) but mostly i did the stuff used it for fixes
 ]]
 
-local Library = {Toggle = true, FirstTab = nil, TabCount = 0, ColorTable = {}, Whitelist = {}, CurrentTab = nil, WhitelistEnabled = false}
+local Library = {Toggle = true, FirstTab = nil, TabCount = 0, ColorTable = {}, CurrentTab = nil, tick = tick(), Connections = {}, Flags = {}}
 local cloneref = cloneref or function(v) return v; end
 local function getservice(v) return cloneref(game:GetService(v)); end
 local http_request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request;
@@ -19,7 +19,7 @@ local TextService = getservice("TextService")
 local RunService = getservice("RunService")
 local Players = getservice("Players")
 
-local IsMobile = UserInputService.TouchEnabled -- and not UserInputService.KeyboardEnabled removed this bc emulator support
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 shared.Anka = shared.Anka or {}
 shared.Anka.Elements = shared.Anka.Elements or {}
 shared.Anka.ElementCounter = 0
@@ -98,33 +98,33 @@ local function makedraggable(ClickObject: GuiObject, Object: GuiObject)
 	local DragStart = nil
 	local StartPosition = nil
 
-	ClickObject.InputBegan:Connect(function(Input)
+	table.insert(Library.Connections, ClickObject.InputBegan:Connect(function(Input)
 		if UserInputService:GetFocusedTextBox() == nil then
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				Dragging = true
 				DragStart = Input.Position
 				StartPosition = Object.Position
-				Input.Changed:Connect(function()
+				table.insert(Library.Connections, Input.Changed:Connect(function()
 					if Input.UserInputState == Enum.UserInputState.End then
 						Dragging = false
 					end
-				end)
+				end))
 			end
 		end
-	end)
+	end))
 
-	ClickObject.InputChanged:Connect(function(Input)
+	table.insert(Library.Connections, ClickObject.InputChanged:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
 			DragInput = Input
 		end
-	end)
+	end))
 
-	UserInputService.InputChanged:Connect(function(Input)
+	table.insert(Library.Connections, UserInputService.InputChanged:Connect(function(Input)
 		if Input == DragInput and Dragging then
 			local Delta = Input.Position - DragStart
 			Object.Position = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
 		end
-	end)
+	end))
 end
 
 local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight: number, MinWidth: number, MaxWidth: number)
@@ -158,7 +158,7 @@ local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight:
 			local holder = tbContainer:FindFirstChild("Holder")
 			if holder then
 				local tabButtons = {}
-				for _, child in pairs(holder:GetChildren()) do
+				for _, child in next, holder:GetChildren() do
 					if child:IsA("TextButton") then
 						table.insert(tabButtons, child)
 					end
@@ -166,7 +166,7 @@ local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight:
 				local tabCount = #tabButtons
 				if tabCount > 0 then
 					local buttonWidth = math.floor((NewSize.X.Offset - 19) / tabCount)
-					for i, TabButton in pairs(tabButtons) do
+					for i, TabButton in next, tabButtons do
 						TabButton.Size = UDim2.new(0, buttonWidth, 1, 0)
 						TabButton.Position = UDim2.new(0, (buttonWidth * (i-1)) + (i * 2), 0, 0)
 					end
@@ -175,7 +175,7 @@ local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight:
 		end
 		local tContainer = MainFrame:FindFirstChild("Holder"):FindFirstChild("TContainer")
 		if tContainer then
-			for _, Tab in pairs(tContainer:GetChildren()) do
+			for _, Tab in next, tContainer:GetChildren() do
 				if Tab:IsA("ScrollingFrame") then
 					Tab.Size = UDim2.new(1, 0, 1, 0)
 					if Tab:FindFirstChild("LeftSide") then
@@ -186,8 +186,7 @@ local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight:
 					end
 					Tab.CanvasSize = UDim2.new(0, 0, 0, math.max(
 						Tab.LeftSide and Tab.LeftSide.ListLayout.AbsoluteContentSize.Y or 0,
-						Tab.RightSide and Tab.RightSide.ListLayout.AbsoluteContentSize.Y or 0
-						) + 15)
+						Tab.RightSide and Tab.RightSide.ListLayout.AbsoluteContentSize.Y or 0) + 15)
 				end
 			end
 		end
@@ -199,20 +198,20 @@ local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight:
 		UpdateTabSizes(MainFrame.Size)
 	end)
 
-	CornerResizeHandle.InputBegan:Connect(function(Input)
+	table.insert(Library.Connections, CornerResizeHandle.InputBegan:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 			DraggingCorner = true
 			StartPos = Input.Position
 			StartSize = MainFrame.Size
-			Input.Changed:Connect(function()
+			table.insert(Library.Connections, Input.Changed:Connect(function()
 				if Input.UserInputState == Enum.UserInputState.End then
 					DraggingCorner = false
 				end
-			end)
+			end))
 		end
-	end)
+	end))
 
-	UserInputService.InputChanged:Connect(function(Input)
+	table.insert(Library.Connections, UserInputService.InputChanged:Connect(function(Input)
 		if Dragging and (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
 			local Delta = Input.Position.Y - StartPos
 			local NewHeight = math.clamp(StartSize.Y.Offset + Delta, MinHeight, MaxHeight)
@@ -227,7 +226,7 @@ local function makeresizable(MainFrame: GuiObject, MinHeight: number, MaxHeight:
 			MainFrame.Size = NewSize
 			UpdateTabSizes(NewSize)
 		end
-	end)
+	end))
 end
 
 local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Color3}, Toggle: (boolean?) -> ())
@@ -345,12 +344,12 @@ local function crebutton(Screen: GuiObject, Main: GuiObject, Config: {Color: Col
 	makedraggable(ReopenButton, ReopenButton)
 	local deltabooleanomg = false
 
-	innerFrame.InputEnded:Connect(function(Input)
+	table.insert(Library.Connections, innerFrame.InputEnded:Connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.Touch or Input.UserInputType == Enum.UserInputType.MouseButton1 then
 			deltabooleanomg = not deltabooleanomg
 			Toggle(deltabooleanomg)
 		end
-	end)
+	end))
 
 	task.delay(2, function()
 		ReopenButton.Visible = true
@@ -402,22 +401,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 	repeat wait() until Folder ~= nil
 
-	--[[
-	if shared.Anka.AnkaLoadAssets then
-		for _, descendant in ipairs(Folder:GetDescendants()) do
-			if descendant:IsA("ImageLabel") or descendant:IsA("ImageButton") then
-				local matched = false
-				for assetName, assetData in pairs(Assets) do
-					local baseFilename = assetData.filename:match("^(.*)%.%w+$")
-					if baseFilename == descendant.Name then
-						asset(assetName, descendant)
-					end
-				end
-			end
-		end
-	end
-	]]
-
 	local Screen = Folder.Bracket:Clone()
 	local Main = Screen.Main
 	local Holder = Main.Holder
@@ -453,12 +436,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				WindowInit.ReopenButton.Visible = true 
 			end
 		else 
-			for _, Pallete in pairs(Screen:GetChildren()) do 
+			for _, Pallete in next, Screen:GetChildren() do 
 				if Pallete:IsA("Frame") and Pallete.Name ~= "Main" and Pallete.Name ~= "Hud" then 
 					Pallete.Visible = false 
 				end 
 			end 
-			Screen.ToolTip.Visible = false 
 			Main.Visible = false
 			if WindowInit.ReopenButton then
 				WindowInit.ReopenButton.Visible = true 
@@ -468,60 +450,73 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 
 	local function UpdateUIGradients(rootInstance: Instance, updateCallback: (UIGradient) -> ())
-		for _, descendant in ipairs(rootInstance:GetDescendants()) do
-			if descendant:IsA("UIGradient") then
-				local parentName = descendant.Parent and descendant.Parent.Name
-				if parentName ~= "BrightnessOverlay" and parentName ~= "SaturationOverlay" and parentName ~= "GradientFrame" and parentName ~= "ColorSlider" and parentName ~= "TransparencySlider" and parentName ~= "Frame" then
-					pcall(function()
-						updateCallback(descendant)
-					end)
+		local main = rootInstance:FindFirstChild("Main")
+		if main then
+			local holder = main:FindFirstChild("Holder")
+			if holder then
+				for _, descendant in next, holder:GetDescendants() do
+					if descendant:IsA("UIGradient") then
+						pcall(updateCallback, descendant)
+					end
+				end
+			end
+			local tContainer = main:FindFirstChild("TContainer")
+			if tContainer then
+				for _, descendant in next, tContainer:GetDescendants() do
+					if descendant:IsA("UIGradient") then
+						pcall(updateCallback, descendant)
+					end
 				end
 			end
 		end
 	end
 
-	RunService.RenderStepped:Connect(function(dt)
+	table.insert(Library.Connections, RunService.RenderStepped:Connect(function(dt)
 		UpdateUIGradients(Screen, function(gradient)
 			gradient.Rotation = (gradient.Rotation + 45 * dt) % 360
 		end)
-	end)
+	end))
 
 	local ReopenButton = crebutton(Screen, Main, Config, Toggle)
 
 	local SearchBar = Topbar.SearchBar
-	SearchBar.MouseEnter:Connect(function()
+	table.insert(Library.Connections, SearchBar.MouseEnter:Connect(function()
 		if not SearchBar:IsFocused() then
 			TweenService:Create(SearchBar, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
 		end
-	end)
-	SearchBar.MouseLeave:Connect(function()
+	end))
+
+	table.insert(Library.Connections, SearchBar.MouseLeave:Connect(function()
 		if not SearchBar:IsFocused() then
 			TweenService:Create(SearchBar, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
 		end
-	end)
-	SearchBar.Focused:Connect(function()
+	end))
+
+	table.insert(Library.Connections, SearchBar.Focused:Connect(function()
 		TweenService:Create(SearchBar, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
-	end)
-	SearchBar.FocusLost:Connect(function()
+	end))
+
+	table.insert(Library.Connections, SearchBar.FocusLost:Connect(function()
 		TweenService:Create(SearchBar, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
-	end)
+	end))
 
 	makedraggable(Topbar, Main)
 
 	local Close = Topbar.Close
 	if IsMobile then
-		Close.InputBegan:Connect(function(Input)
+		table.insert(Library.Connections, Close.InputBegan:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				Close.TextColor3 = Config.Color
 			end
-		end)
-		Close.InputEnded:Connect(function(Input)
+		end))
+
+		table.insert(Library.Connections, Close.InputEnded:Connect(function(Input)
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				Close.TextColor3 = Color3.fromRGB(150, 150, 150)
 				Screen.ToolTip.Visible = false
 				Toggle(false)
 			end
-		end)
+		end))
 	else
 		Close.Visible = false
 	end
@@ -537,7 +532,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		SearchText = string.lower(SearchText)
 		local CurrentTab = Library.CurrentTab or TContainer:FindFirstChild(Library.FirstTab .. " T")
 		if not CurrentTab then return end
-		for SectionFrame, SectionData in pairs(AllSections) do
+		for SectionFrame, SectionData in next, AllSections do
 			if SectionData.TabParent == CurrentTab then
 				local SectionName = SectionData.Name
 				local Found = string.find(string.lower(SectionName), SearchText)
@@ -576,15 +571,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		end
 	end
 
-	SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
+	table.insert(Library.Connections, SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
 		FilterSections(SearchBar.Text)
-	end)
+	end))
 
-	SearchBar.Changed:Connect(function(Property)
+	table.insert(Library.Connections, SearchBar.Changed:Connect(function(Property)
 		if Property == "Text" then
 			FilterSections(SearchBar.Text)
 		end
-	end)
+	end))
 
 	local TransitionFrame = nil
 	local function CreateTransitionFrame(Parent, Color) 
@@ -633,10 +628,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				}):Play()
 			end
 		end
-		slideTween.Completed:Connect(function()
+		table.insert(Library.Connections, slideTween.Completed:Connect(function()
 			Tab.Visible = false
 			if Callback then Callback() end
-		end)
+		end))
 		slideTween:Play()
 	end
 
@@ -678,7 +673,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	local function SwitchToTab(NewTab, NewTabButton)
 		if IsTabSwitching or Library.CurrentTab == NewTab then return end
 		IsTabSwitching = true
-		for _, element in pairs(shared.Anka.Elements) do
+		for _, element in next, shared.Anka.Elements do
 			if element.Type == "ColorPicker" then
 				element:ClosePallete()
 			end
@@ -699,7 +694,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 
 	local function CloseAll()
-		for _, Tab in pairs(TContainer:GetChildren()) do
+		for _, Tab in next, TContainer:GetChildren() do
 			if Tab:IsA("ScrollingFrame") then
 				Tab.Visible = false
 			end
@@ -707,7 +702,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 
 	local function ResetAll()
-		for _, TabButton in pairs(TBContainer:GetChildren()) do
+		for _, TabButton in next, TBContainer:GetChildren() do
 			if TabButton:IsA("TextButton") then
 				TabButton.BackgroundTransparency = 1
 				local underline = TabButton:FindFirstChild("Underline")
@@ -716,18 +711,18 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 			end
 		end
-		for _, TabButton in pairs(TBContainer:GetChildren()) do
+		for _, TabButton in next, TBContainer:GetChildren() do
 			if TabButton:IsA("TextButton") then
 				TabButton.Size = UDim2.new(0, 480 / Library.TabCount, 1, 0)
 			end
 		end
-		for _, Pallete in pairs(Screen:GetChildren()) do
+		for _, Pallete in next, Screen:GetChildren() do
 			if Pallete:IsA("Frame") and Pallete.Name ~= "Main" then
 				Pallete.Visible = false
 			end
 		end
 
-		for SectionFrame, _ in pairs(AllSections) do
+		for SectionFrame, _ in next, AllSections do
 			SectionFrame.Title.TextColor3 = Color3.fromRGB(150, 150, 150)
 			if SectionFrame:FindFirstChild("Highlight") then
 				SectionFrame.Highlight:Destroy()
@@ -736,7 +731,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 
 	local function KeepFirst()
-		for _, Tab in pairs(TContainer:GetChildren()) do
+		for _, Tab in next, TContainer:GetChildren() do
 			if Tab:IsA("ScrollingFrame") then
 				if Tab.Name == Library.FirstTab .. " T" then
 					Tab.Visible = true
@@ -746,7 +741,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 			end
 		end
-		for _, TabButton in pairs(TBContainer:GetChildren()) do
+		for _, TabButton in next, TBContainer:GetChildren() do
 			if TabButton:IsA("TextButton") then
 				if TabButton.Name == Library.FirstTab .. " TB" then
 					TabButton.BackgroundTransparency = 0
@@ -762,9 +757,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 
 	local function ChangeColor(Color)
+		if not Screen or not Screen.Parent then
+			return
+		end
 		Config.Color = Color
 		Notifications.AccentColor = Color
-		for i, v in pairs(Library.ColorTable) do
+		for i, v in next, Library.ColorTable do
+			if not v or not v.Parent then
+				table.remove(Library.ColorTable, i)
+				continue
+			end
 			local isButtonElement = false
 			if v.Parent and v.Parent.Name and string.find(v.Parent.Name, " B$") then
 				isButtonElement = true
@@ -827,7 +829,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 			end
 		end
-		for UniqueID, Element in pairs(shared.Anka.Elements) do
+		for UniqueID, Element in next, shared.Anka.Elements do
+			if not Element or (Element.Object and not Element.Object.Parent) then
+				shared.Anka.Elements[UniqueID] = nil
+				continue
+			end
 			if Element.Type == "Toggle" and Element.UpdateColors then
 				Element:UpdateColors()
 			elseif Element.Type == "TextBox" and Element.UpdateColors then
@@ -842,20 +848,25 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 	end
 
 	local function ChangeFont(Font)
+		if not Screen or not Screen.Parent then return end
 		local function UpdateElementFont(element)
 			if element:IsA("TextLabel") or element:IsA("TextButton") or element:IsA("TextBox") then
 				element.Font = Font
 			end
 		end
-		for _, child in pairs(Screen:GetDescendants()) do
+		for _, child in next, Screen:GetDescendants() do
 			UpdateElementFont(child)
 		end
 		if Notifications and Notifications.Container then
-			for _, child in pairs(Notifications.Container:GetDescendants()) do
+			for _, child in next, Notifications.Container:GetDescendants() do
 				UpdateElementFont(child)
 			end
 		end
-		for UniqueID, Element in pairs(shared.Anka.Elements) do
+		for UniqueID, Element in next, shared.Anka.Elements do
+			if not Element or (Element.Object and not Element.Object.Parent) then
+				shared.Anka.Elements[UniqueID] = nil
+				continue
+			end
 			if Element.UpdateFont then
 				Element:UpdateFont(Font)
 			elseif Element.Object then
@@ -908,9 +919,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		local Tab = Folder.Tab:Clone()
 		local TabButton = Folder.TabButton:Clone()
 
+		Library.Connections = Library.Connections or {}
+
 		Tab.Name = Name .. " T"
 		Tab.Parent = TContainer
-
 		TabButton.Name = Name .. " TB"
 		TabButton.Parent = TBContainer
 		TabButton.Title.Text = Name
@@ -925,14 +937,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		Underline.Size = UDim2.new(1, 0, 0, 2)
 		Underline.Visible = false
 		table.insert(Library.ColorTable, Underline)
-
 		table.insert(Library.ColorTable, TabButton)
+
 		Library.TabCount = Library.TabCount + 1
 		if Library.TabCount == 1 then
 			Library.FirstTab = Name
 			Underline.Visible = true
 		end
-
 		CloseAll()
 		ResetAll()
 		KeepFirst()
@@ -953,48 +964,55 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		end
 
-		TabButton.InputBegan:Connect(function(Input)
+		table.insert(Library.Connections, TabButton.InputBegan:Connect(function(Input)
+			if not TabButton or not TabButton.Parent then return end
 			if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 				SwitchToTab(Tab, TabButton)
 			end
-		end)
+		end))
 
-		TabButton.MouseEnter:Connect(function()
+		table.insert(Library.Connections, TabButton.MouseEnter:Connect(function()
+			if not TabButton or not TabButton.Parent then return end
 			if Library.CurrentTab ~= Tab then
 				TweenService:Create(TabButton, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
 					BackgroundTransparency = 0.7
 				}):Play()
 			end
-		end)
+		end))
 
-		TabButton.MouseLeave:Connect(function()
+		table.insert(Library.Connections, TabButton.MouseLeave:Connect(function()
+			if not TabButton or not TabButton.Parent then return end
 			if Library.CurrentTab ~= Tab then
 				TweenService:Create(TabButton, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
 					BackgroundTransparency = 1
 				}):Play()
 			end
-		end)
+		end))
 
-		Tab.LeftSide.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		table.insert(Library.Connections, Tab.LeftSide.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			if not Tab or not Tab.Parent then return end
 			if GetSide(true).Name == Tab.LeftSide.Name then
 				Tab.CanvasSize = UDim2.new(0, 0, 0, Tab.LeftSide.ListLayout.AbsoluteContentSize.Y + 15)
 			else
 				Tab.CanvasSize = UDim2.new(0, 0, 0, Tab.RightSide.ListLayout.AbsoluteContentSize.Y + 15)
 			end
-		end)
+		end))
 
-		Tab.RightSide.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		table.insert(Library.Connections, Tab.RightSide.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			if not Tab or not Tab.Parent then return end
 			if GetSide(true).Name == Tab.LeftSide.Name then
 				Tab.CanvasSize = UDim2.new(0, 0, 0, Tab.LeftSide.ListLayout.AbsoluteContentSize.Y + 15)
 			else
 				Tab.CanvasSize = UDim2.new(0, 0, 0, Tab.RightSide.ListLayout.AbsoluteContentSize.Y + 15)
 			end
-		end)
+		end))
 
 		function TabInit:CreateSection(Name: string, Side: string?): Section
 			local SectionInit: Section = {}
 			local Section = Folder.Section:Clone()
 			Section.Name = Name .. " S"
+
+			Library.Connections = Library.Connections or {}
 
 			local sslsid
 			if Side then
@@ -1009,25 +1027,23 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			else
 				sslsid = GetSide(false)
 			end
-
 			Section.Parent = sslsid
-
 			Section.Title.Text = Name
 			Section.Title.Size = UDim2.new(0, Section.Title.TextBounds.X + 10, 0, 2)
 			AllSections[Section] = {
 				Name = Name,
 				TabParent = Tab
 			}
-
 			if string.find(Section.Parent.Name:lower(), "left") then
 				Section.Parent.Padding.PaddingRight = UDim.new(0, 3)
 			elseif string.find(Section.Parent.Name:lower(), "right") then
 				Section.Parent.Padding.PaddingLeft = UDim.new(0, 3)
 			end
 
-			Section.Container.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			table.insert(Library.Connections, Section.Container.ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				if not Section or not Section.Parent then return end
 				Section.Size = UDim2.new(1, 0, 0, Section.Container.ListLayout.AbsoluteContentSize.Y + 15)
-			end)
+			end))
 
 			function SectionInit:SetVisible(Visible: boolean)
 				Section.Visible = Visible
@@ -1061,33 +1077,42 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function LabelInit:SetVisible(Visible: boolean)
-					Label.Visible = Visible
+					if Label and Label.Parent then
+						Label.Visible = Visible
+					end
 				end
 
 				function LabelInit:IsVisible(): boolean
-					return Label.Visible
+					return Label and Label.Parent and Label.Visible
 				end
 
 				function LabelInit:ToggleVisibility()
-					Label.Visible = not Label.Visible
-					return Label.Visible
+					if Label and Label.Parent then
+						Label.Visible = not Label.Visible
+						return Label.Visible
+					end
+					return false
 				end
 
 				function LabelInit:UpdateText(Text)
-					Label.Text = Text
-					if not WrapText then
-						Label.Size = UDim2.new(1, -10, 0, Label.TextBounds.Y)
+					if Label and Label.Parent then
+						Label.Text = Text
+						if not WrapText then
+							Label.Size = UDim2.new(1, -10, 0, Label.TextBounds.Y)
+						end
 					end
 				end
 
 				function LabelInit:SetWrapText(Wrap: boolean)
-					Label.TextWrapped = Wrap
-					if Wrap then
-						Label.AutomaticSize = Enum.AutomaticSize.Y
-						Label.Size = UDim2.new(1, -10, 0, 0)
-					else
-						Label.AutomaticSize = Enum.AutomaticSize.None
-						Label.Size = UDim2.new(1, -10, 0, Label.TextBounds.Y)
+					if Label and Label.Parent then
+						Label.TextWrapped = Wrap
+						if Wrap then
+							Label.AutomaticSize = Enum.AutomaticSize.Y
+							Label.Size = UDim2.new(1, -10, 0, 0)
+						else
+							Label.AutomaticSize = Enum.AutomaticSize.None
+							Label.Size = UDim2.new(1, -10, 0, Label.TextBounds.Y)
+						end
 					end
 				end
 
@@ -1106,6 +1131,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Button.Parent = Section.Container 
 				Button.Title.Text = Name 
 				Button.Title.TextWrapped = WrapText or false
+
+				Library.Connections = Library.Connections or {}
 
 				if WrapText then
 					Button.Title.AutomaticSize = Enum.AutomaticSize.Y
@@ -1127,70 +1154,58 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local TweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 				local function UpdateButtonColor()
+					if not Button or not Button.Parent then return end
 					local TargetColor = IsPressed and Config.Color or IsHovered and Color3.fromRGB(60, 60, 60) or DefaultColor
 					TweenService:Create(Button, TweenInfo, {BackgroundColor3 = TargetColor}):Play()
 				end
 
-				Button.InputBegan:Connect(function(Input) 
+				table.insert(Library.Connections, Button.InputBegan:Connect(function(Input) 
+					if not Button or not Button.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
 						IsPressed = true
 						UpdateButtonColor()
 					end 
-				end)  
+				end))
 
-				Button.InputEnded:Connect(function(Input) 
+				table.insert(Library.Connections, Button.InputEnded:Connect(function(Input) 
+					if not Button or not Button.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
 						IsPressed = false
 						UpdateButtonColor()
 						Callback() 
 					end 
-				end)  
+				end))
 
-				Button.MouseEnter:Connect(function()
+				table.insert(Library.Connections, Button.MouseEnter:Connect(function()
+					if not Button or not Button.Parent then return end
 					IsHovered = true
 					if not IsPressed then
 						UpdateButtonColor()
 					end
-				end)
+				end))
 
-				Button.MouseLeave:Connect(function() 
+				table.insert(Library.Connections, Button.MouseLeave:Connect(function() 
+					if not Button or not Button.Parent then return end
 					IsHovered = false
 					UpdateButtonColor()
-				end)
-
-				function ButtonInit:AddToolTip(Name: string) 
-					if tostring(Name):gsub(" ", "") ~= "" then 
-						Button.MouseEnter:Connect(function() 
-							Screen.ToolTip.Text = Name 
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5) 
-							Screen.ToolTip.Visible = true 
-						end)  
-
-						Button.MouseLeave:Connect(function() 
-							Screen.ToolTip.Visible = false 
-						end)  
-
-						Button.TouchTap:Connect(function() 
-							Screen.ToolTip.Text = Name 
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5) 
-							Screen.ToolTip.Visible = true 
-							task.wait(2) 
-							Screen.ToolTip.Visible = false 
-						end) 
-					end 
-				end
+				end))
 
 				function ButtonInit:SetVisible(Visible: boolean)
-					Button.Visible = Visible
+					if Button and Button.Parent then
+						Button.Visible = Visible
+					end
 				end
 
 				function ButtonInit:IsVisible(): boolean
-					return Button.Visible
+					return Button and Button.Parent and Button.Visible
 				end
 
 				function ButtonInit:ToggleVisibility()
-					Button.Visible = not Button.Visible
-					return Button.Visible
+					if Button and Button.Parent then
+						Button.Visible = not Button.Visible
+						return Button.Visible
+					end
+					return false
 				end
 
 				function ButtonInit:UpdateColors()
@@ -1198,16 +1213,18 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function ButtonInit:SetWrapText(Wrap: boolean)
-					Button.Title.TextWrapped = Wrap
-					if Wrap then
-						Button.Title.AutomaticSize = Enum.AutomaticSize.Y
-						Button.Title.Size = UDim2.new(1, -10, 0, 0)
-						Button.AutomaticSize = Enum.AutomaticSize.Y
-						Button.Size = UDim2.new(1, -10, 0, 0)
-					else
-						Button.Title.AutomaticSize = Enum.AutomaticSize.None
-						Button.AutomaticSize = Enum.AutomaticSize.None
-						Button.Size = UDim2.new(1, -10, 0, Button.Title.TextBounds.Y + 5)
+					if Button and Button.Parent then
+						Button.Title.TextWrapped = Wrap
+						if Wrap then
+							Button.Title.AutomaticSize = Enum.AutomaticSize.Y
+							Button.Title.Size = UDim2.new(1, -10, 0, 0)
+							Button.AutomaticSize = Enum.AutomaticSize.Y
+							Button.Size = UDim2.new(1, -10, 0, 0)
+						else
+							Button.Title.AutomaticSize = Enum.AutomaticSize.None
+							Button.AutomaticSize = Enum.AutomaticSize.None
+							Button.Size = UDim2.new(1, -10, 0, Button.Title.TextBounds.Y + 5)
+						end
 					end
 				end
 
@@ -1228,6 +1245,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				TextBox.Background.Input.PlaceholderText = PlaceHolder
 				TextBox.Title.Size = UDim2.new(1, 0, 0, TextBox.Title.TextBounds.Y + 5)
 				TextBox.Size = UDim2.new(1, -10, 0, TextBox.Title.TextBounds.Y + 25)
+
+				Library.Connections = Library.Connections or {}
 
 				table.insert(Library.ColorTable, TextBox.Background)
 				table.insert(Library.ColorTable, TextBox.Title)
@@ -1251,6 +1270,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function TextBoxInit:UpdateColors()
+					if not TextBox or not TextBox.Parent then return end
 					if TextBox.Background.Input:IsFocused() then
 						TextBox.Background.BorderColor3 = Config.Color
 						TextBox.Title.TextColor3 = Config.Color
@@ -1260,16 +1280,18 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end
 
-				TextBox.Background.Input.Focused:Connect(function()
+				table.insert(Library.Connections, TextBox.Background.Input.Focused:Connect(function()
+					if not TextBox or not TextBox.Parent then return end
 					TweenService:Create(TextBox.Background, focusTweenInfo, {
 						BackgroundColor3 = originalBackgroundColor:lerp(Color3.fromRGB(255, 255, 255), 0.1),
 						BorderColor3 = Config.Color,
 						BackgroundTransparency = math.max(0, originalTransparency - 0.1)
 					}):Play()
 					TweenService:Create(TextBox.Title, focusTweenInfo, {TextColor3 = Config.Color}):Play()
-				end)
+				end))
 
-				TextBox.Background.Input.FocusLost:Connect(function()
+				table.insert(Library.Connections, TextBox.Background.Input.FocusLost:Connect(function()
+					if not TextBox or not TextBox.Parent then return end
 					TweenService:Create(TextBox.Background, focusTweenInfo, {
 						BackgroundColor3 = originalBackgroundColor,
 						BorderColor3 = originalBorderColor,
@@ -1284,27 +1306,30 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					else 
 						Callback(inputText)
 					end
-				end)
+				end))
 
-				TextBox.MouseEnter:Connect(function()
+				table.insert(Library.Connections, TextBox.MouseEnter:Connect(function()
+					if not TextBox or not TextBox.Parent then return end
 					if not TextBox.Background.Input:IsFocused() then
 						TweenService:Create(TextBox.Background, hoverTweenInfo, {
 							BackgroundColor3 = originalBackgroundColor:lerp(Color3.fromRGB(255, 255, 255), 0.05),
 							BackgroundTransparency = math.max(0, originalTransparency - 0.05)
 						}):Play()
 					end
-				end)
+				end))
 
-				TextBox.MouseLeave:Connect(function()
+				table.insert(Library.Connections, TextBox.MouseLeave:Connect(function()
+					if not TextBox or not TextBox.Parent then return end
 					if not TextBox.Background.Input:IsFocused() then
 						TweenService:Create(TextBox.Background, hoverTweenInfo, {
 							BackgroundColor3 = originalBackgroundColor,
 							BackgroundTransparency = originalTransparency
 						}):Play()
 					end
-				end)
+				end))
 
 				function TextBoxInit:SetValue(String)
+					if not TextBox or not TextBox.Parent then return end
 					TextBox.Background.Input.Text = tostring(String)
 
 					local highlightTween = TweenService:Create(TextBox.Background, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
@@ -1314,6 +1339,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					highlightTween:Play()
 
 					highlightTween.Completed:Connect(function()
+						if not TextBox or not TextBox.Parent then return end
 						TweenService:Create(TextBox.Background, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
 							BackgroundColor3 = originalBackgroundColor
 						}):Play()
@@ -1323,72 +1349,26 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function TextBoxInit:GetValue()
+					if not TextBox or not TextBox.Parent then return "" end
 					return TextBox.Background.Input.Text
 				end
 
 				function TextBoxInit:SetVisible(Visible: boolean)
-					TextBox.Visible = Visible
+					if TextBox and TextBox.Parent then
+						TextBox.Visible = Visible
+					end
 				end
 
 				function TextBoxInit:IsVisible(): boolean
-					return TextBox.Visible
+					return TextBox and TextBox.Parent and TextBox.Visible
 				end
 
 				function TextBoxInit:ToggleVisibility()
-					TextBox.Visible = not TextBox.Visible
-					return TextBox.Visible
-				end
-
-				function TextBoxInit:AddToolTip(Name: string)
-					if tostring(Name):gsub(" ", "") ~= "" then
-						local originalTooltipTransparency = Screen.ToolTip.BackgroundTransparency
-						local originalTooltipPosition = Screen.ToolTip.Position
-
-						TextBox.MouseEnter:Connect(function()
-							Screen.ToolTip.Text = Name
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-							Screen.ToolTip.BackgroundTransparency = 1
-							Screen.ToolTip.TextTransparency = 1
-							Screen.ToolTip.Position = originalTooltipPosition + UDim2.new(0, 0, 0, 10)
-							Screen.ToolTip.Visible = true
-							TweenService:Create(Screen.ToolTip, tooltipTweenInfo, {
-								BackgroundTransparency = originalTooltipTransparency,
-								TextTransparency = 0,
-								Position = originalTooltipPosition
-							}):Play()
-						end)
-
-						TextBox.MouseLeave:Connect(function()
-							TweenService:Create(Screen.ToolTip, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-								BackgroundTransparency = 1,
-								TextTransparency = 1,
-								Position = originalTooltipPosition + UDim2.new(0, 0, 0, -5)
-							}):Play():Wait()
-							Screen.ToolTip.Visible = false
-						end)
-
-						TextBox.TouchTap:Connect(function()
-							if not TextBox.Background.Input:IsFocused() then
-								Screen.ToolTip.Text = Name
-								Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-								Screen.ToolTip.BackgroundTransparency = 1
-								Screen.ToolTip.TextTransparency = 1
-								Screen.ToolTip.Position = originalTooltipPosition + UDim2.new(0, 0, 0, 10)
-								Screen.ToolTip.Visible = true
-								TweenService:Create(Screen.ToolTip, tooltipTweenInfo, {
-									BackgroundTransparency = originalTooltipTransparency,
-									TextTransparency = 0,
-									Position = originalTooltipPosition
-								}):Play()
-								task.wait(2)
-								TweenService:Create(Screen.ToolTip, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-									BackgroundTransparency = 1,
-									TextTransparency = 1
-								}):Play():Wait()
-								Screen.ToolTip.Visible = false
-							end
-						end)
+					if TextBox and TextBox.Parent then
+						TextBox.Visible = not TextBox.Visible
+						return TextBox.Visible
 					end
+					return false
 				end
 
 				TextBoxInit.Type = "TextBox"
@@ -1409,7 +1389,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Toggle.Parent = Section.Container
 				Toggle.Title.Text = Name
 				Toggle.Size = UDim2.new(1, -10, 0, Toggle.Title.TextBounds.Y + 5)
-
+				
+				Library.Connections = Library.Connections or {}
+				
 				local StatusConfig = {
 					dangerous = {
 						color = Color3.fromRGB(255, 85, 85),
@@ -1666,6 +1648,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function SetState(State)
+					if not Toggle or not Toggle.Parent then
+						return
+					end
+
 					TweenService:Create(Toggle.Toggle, toggleAnimInfo, {}):Cancel()
 					TweenService:Create(Toggle.Title, textAnimInfo, {}):Cancel()
 					TweenService:Create(GlowFrame, glowAnimInfo, {}):Cancel()
@@ -1726,7 +1712,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					Callback(State)
 				end
 
-				Toggle.MouseEnter:Connect(function()
+				table.insert(Library.Connections, Toggle.MouseEnter:Connect(function()
 					local lamecolst = StatusConfig[StatusLocal].color
 
 					if not ToggleState then
@@ -1750,9 +1736,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							})
 						statusHoverTween:Play()
 					end
-				end)
+				end))
 
-				Toggle.MouseLeave:Connect(function()
+				table.insert(Library.Connections, Toggle.MouseLeave:Connect(function()
 					local lamecolst = StatusConfig[StatusLocal].color
 
 					if not ToggleState then
@@ -1776,7 +1762,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							})
 						statusUnhoverTween:Play()
 					end
-				end)
+				end))
 
 				function ToggleInit:SetState(State)
 					SetState(State)
@@ -1856,41 +1842,14 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end
 
-				Toggle.InputBegan:Connect(function(Input)
+				table.insert(Library.Connections, Toggle.InputBegan:Connect(function(Input)
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							ToggleState = not ToggleState
 							SetState(ToggleState)
 						end
 					end
-				end)
-
-				function ToggleInit:AddToolTip(Name)
-					local TooltipText = Name
-					if StatusLocal ~= "normal" then
-						TooltipText = Name .. " (" .. StatusConfig[StatusLocal].description .. ")"
-					end
-
-					if tostring(TooltipText):gsub(" ", "") ~= "" then
-						Toggle.MouseEnter:Connect(function()
-							Screen.ToolTip.Text = TooltipText
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-							Screen.ToolTip.Visible = true
-						end)
-
-						Toggle.MouseLeave:Connect(function()
-							Screen.ToolTip.Visible = false
-						end)
-
-						Toggle.TouchTap:Connect(function()
-							Screen.ToolTip.Text = TooltipText
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-							Screen.ToolTip.Visible = true
-							task.wait(2)
-							Screen.ToolTip.Visible = false
-						end)
-					end
-				end
+				end))
 
 				local KeybindObject = nil
 				local KeybindMode = "toggle"
@@ -2109,7 +2068,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				else
 					Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
 				end
-
+				
 				ToggleInit.Type = "Toggle"
 				ToggleInit.UniqueID = UniqueID
 				shared.Anka.Elements[UniqueID] = ToggleInit
@@ -2125,7 +2084,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local Slider = Folder.Slider:Clone()
 				Slider.Name = Name .. " S"
 				Slider.Parent = Section.Container
-
+				
+				Library.Connections = Library.Connections or {}
+				
 				Slider.Title.Text = Name
 				Slider.Slider.Bar.Size = UDim2.new(Min / Max, 0, 1, 0)
 				Slider.Slider.Bar.BackgroundColor3 = Config.Color
@@ -2154,11 +2115,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, 0
 				)
 				local function playGlow()
+					if not Slider or not Slider.Parent then return end
 					local glowTween = TweenService:Create(GlowFrame, glowAnimInfo, {BackgroundTransparency = 0.7})
 					glowTween:Play()
 					return glowTween
 				end
 				local function stopGlow()
+					if not Slider or not Slider.Parent then return end
 					TweenService:Create(GlowFrame, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
 				end
 
@@ -2166,6 +2129,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local Dragging = false
 
 				local function Sliding(Input)
+					if not Slider or not Slider.Parent then return end
 					local Position = UDim2.new(math.clamp((Input.Position.X - Slider.Slider.AbsolutePosition.X) / Slider.Slider.AbsoluteSize.X, 0, 1), 0, 1, 0)
 					Slider.Slider.Bar.Size = Position
 					local SliderPrecise = ((Position.X.Scale * Max) / Max) * (Max - Min) + Min
@@ -2178,13 +2142,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function SetValue(Value)
+					if not Slider or not Slider.Parent then return end
 					GlobalSliderValue = Value
 					Slider.Slider.Bar.Size = UDim2.new(Value / Max, 0, 1, 0)
 					Slider.Value.PlaceholderText = Value
 					Callback(Value)
 				end
 
-				Slider.Value.FocusLost:Connect(function()
+				table.insert(Library.Connections, Slider.Value.FocusLost:Connect(function()
+					if not Slider or not Slider.Parent then return end
 					if not tonumber(Slider.Value.Text) then
 						Slider.Value.Text = GlobalSliderValue
 					elseif Slider.Value.Text == "" or tonumber(Slider.Value.Text) <= Min then
@@ -2198,9 +2164,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					Slider.Value.PlaceholderText = Slider.Value.Text
 					Callback(tonumber(Slider.Value.Text))
 					Slider.Value.Text = ""
-				end)
+				end))
 
-				Slider.InputBegan:Connect(function(Input)
+				table.insert(Library.Connections, Slider.InputBegan:Connect(function(Input)
+					if not Slider or not Slider.Parent then return end
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							Sliding(Input)
@@ -2208,29 +2175,34 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							playGlow()
 						end
 					end
-				end)
+				end))
 
-				Slider.InputEnded:Connect(function(Input)
+				table.insert(Library.Connections, Slider.InputEnded:Connect(function(Input)
+					if not Slider or not Slider.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 						Dragging = false
 						stopGlow()
 					end
-				end)
+				end))
 
-				UserInputService.InputChanged:Connect(function(Input)
+				table.insert(Library.Connections, UserInputService.InputChanged:Connect(function(Input)
+					if not Slider or not Slider.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
 						if Dragging then
 							Sliding(Input)
 						end
 					end
-				end)
+				end))
 
-				Slider.MouseEnter:Connect(function()
+				table.insert(Library.Connections, Slider.MouseEnter:Connect(function()
+					if not Slider or not Slider.Parent then return end
 					if not Dragging then playGlow() end
-				end)
-				Slider.MouseLeave:Connect(function()
+				end))
+
+				table.insert(Library.Connections, Slider.MouseLeave:Connect(function()
+					if not Slider or not Slider.Parent then return end
 					if not Dragging then stopGlow() end
-				end)
+				end))
 
 				function SliderInit:SetValue(Value)
 					SetValue(Value)
@@ -2240,41 +2212,29 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					return GlobalSliderValue
 				end
 
-				function SliderInit:AddToolTip(Name)
-					if tostring(Name):gsub(" ", "") ~= "" then
-						Slider.MouseEnter:Connect(function()
-							Screen.ToolTip.Text = Name
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-							Screen.ToolTip.Visible = true
-						end)
-
-						Slider.MouseLeave:Connect(function()
-							Screen.ToolTip.Visible = false
-						end)
-
-						Slider.TouchTap:Connect(function()
-							if not Slider.Value:IsFocused() then
-								Screen.ToolTip.Text = Name
-								Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-								Screen.ToolTip.Visible = true
-								task.wait(2)
-								Screen.ToolTip.Visible = false
-							end
-						end)
+				function SliderInit:SetVisible(Visible: boolean)
+					if Slider and Slider.Parent then
+						Slider.Visible = Visible
 					end
 				end
 
-				function SliderInit:SetVisible(Visible: boolean)
-					Slider.Visible = Visible
-				end
-
 				function SliderInit:IsVisible(): boolean
-					return Slider.Visible
+					return Slider and Slider.Parent and Slider.Visible
 				end
 
 				function SliderInit:ToggleVisibility()
-					Slider.Visible = not Slider.Visible
-					return Slider.Visible
+					if Slider and Slider.Parent then
+						Slider.Visible = not Slider.Visible
+						return Slider.Visible
+					end
+					return false
+				end
+
+				function SliderInit:UpdateColors()
+					if Slider and Slider.Parent then
+						Slider.Slider.Bar.BackgroundColor3 = Config.Color
+						GlowFrame.BackgroundColor3 = Config.Color
+					end
 				end
 
 				Slider.Title.TextWrapped = WrapText or false
@@ -2300,6 +2260,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local Dropdown = Folder.Dropdown:Clone()
 				Dropdown.Name = Name .. (Multi and " MD" or " D")
 				Dropdown.Parent = Section.Container
+
+				Library.Connections = Library.Connections or {}
 
 				Dropdown.Title.Text = Name
 				Dropdown.Title.Size = UDim2.new(1, 0, 0, Dropdown.Title.TextBounds.Y + 5)
@@ -2329,7 +2291,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if Multi then
 						local selectedArray = {}
 						local selectedCount = 0
-						for option, isSelected in pairs(SelectedOptions) do
+						for option, isSelected in next, SelectedOptions do
 							if isSelected then
 								table.insert(selectedArray, option)
 								selectedCount += 1
@@ -2360,7 +2322,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function UpdateSingleSelection(selectedOption, immediate)
-					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 						if child:IsA("TextButton") then
 							local isSelected = child.Name == selectedOption
 							UpdateOptionVisual(child, isSelected, immediate)
@@ -2373,7 +2335,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function SetOptionsVisibility(visible)
-					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 						if child:IsA("TextButton") then
 							child.Title.TextTransparency = visible and 0 or 1
 							if Multi then
@@ -2385,7 +2347,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end
 
-				Dropdown.MouseButton1Click:Connect(function()
+				table.insert(Library.Connections, Dropdown.MouseButton1Click:Connect(function()
+					if not Dropdown or not Dropdown.Parent then return end
 					if isAnimating then return end
 					isAnimating = true
 					DropdownToggle = not DropdownToggle
@@ -2433,43 +2396,26 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							isAnimating = false
 						end
 					end)
-				end)
+				end))
 
-				Dropdown.MouseEnter:Connect(function()
+				table.insert(Library.Connections, Dropdown.MouseEnter:Connect(function()
+					if not Dropdown or not Dropdown.Parent then return end
 					TweenService:Create(Dropdown, hoverInfo, {
 						BackgroundTransparency = DropdownToggle and 0.9 or 0.97
 					}):Play()
-				end)
+				end))
 
-				Dropdown.MouseLeave:Connect(function()
+				table.insert(Library.Connections, Dropdown.MouseLeave:Connect(function()
+					if not Dropdown or not Dropdown.Parent then return end
 					TweenService:Create(Dropdown, hoverInfo, {
 						BackgroundTransparency = DropdownToggle and 0.95 or 1
 					}):Play()
-				end)
+				end))
 
-				for _, OptionName in pairs(OptionTable) do
-					local Option = Folder.Option:Clone()
-					Option.Name = OptionName
-					Option.Parent = Dropdown.Container.Holder.Container
-					Option.Title.Text = OptionName
-					Option.BackgroundColor3 = Config.Color
-					Option.Size = UDim2.new(1, 0, 0, Option.Title.TextBounds.Y + 5)
-					table.insert(Library.ColorTable, Option)
-
-					local originalSize = Option.Size
-
+				local function AddOptionConnections(Option, OptionName, originalSize)
 					if Multi then
-						if InitialValue and type(InitialValue) == "table" then
-							for _, v in pairs(InitialValue) do
-								if v == OptionName then
-									SelectedOptions[OptionName] = true
-									break
-								end
-							end
-						end
-						UpdateOptionVisual(Option, SelectedOptions[OptionName], true)
-
-						Option.MouseButton1Up:Connect(function()
+						table.insert(Library.Connections, Option.MouseButton1Up:Connect(function()
+							if not Option or not Option.Parent then return end
 							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
 								{Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
 							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
@@ -2484,46 +2430,45 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							UpdateText()
 
 							local selectedArray = {}
-							for k, v in pairs(SelectedOptions) do
+							for k, v in next, SelectedOptions do
 								if v then table.insert(selectedArray, k) end
 							end
 
 							local returnValue = Callback(selectedArray)
 							if type(returnValue) == "table" then
 								SelectedOptions = {}
-								for _, v in pairs(returnValue) do
+								for _, v in next, returnValue do
 									SelectedOptions[v] = true
 								end
-								for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+								for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 									if child:IsA("TextButton") then
 										UpdateOptionVisual(child, SelectedOptions[child.Name])
 									end
 								end
 								UpdateText()
 							end
-						end)
+						end))
 
-						Option.MouseEnter:Connect(function()
+						table.insert(Library.Connections, Option.MouseEnter:Connect(function()
+							if not Option or not Option.Parent then return end
 							if not SelectedOptions[OptionName] then
 								TweenService:Create(Option, hoverInfo, {
 									BackgroundTransparency = 0.85,
 									Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 1)
 								}):Play()
 							end
-						end)
+						end))
 
-						Option.MouseLeave:Connect(function()
+						table.insert(Library.Connections, Option.MouseLeave:Connect(function()
+							if not Option or not Option.Parent then return end
 							TweenService:Create(Option, hoverInfo, {
 								Size = originalSize,
 								BackgroundTransparency = SelectedOptions[OptionName] and 0.7 or 1
 							}):Play()
-						end)
+						end))
 					else
-						if InitialValue and InitialValue == OptionName then
-							UpdateSingleSelection(OptionName, true)
-						end
-
-						Option.MouseButton1Click:Connect(function()
+						table.insert(Library.Connections, Option.MouseButton1Click:Connect(function()
+							if not Option or not Option.Parent then return end
 							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
 								{Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
 							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
@@ -2535,24 +2480,56 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 							UpdateSingleSelection(OptionName)
 							Callback(OptionName)
-						end)
+						end))
 
-						Option.MouseEnter:Connect(function()
+						table.insert(Library.Connections, Option.MouseEnter:Connect(function()
+							if not Option or not Option.Parent then return end
 							if CurrentSelectedOption ~= OptionName then
 								TweenService:Create(Option, hoverInfo, {
 									BackgroundTransparency = 0.85,
 									Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 1)
 								}):Play()
 							end
-						end)
+						end))
 
-						Option.MouseLeave:Connect(function()
+						table.insert(Library.Connections, Option.MouseLeave:Connect(function()
+							if not Option or not Option.Parent then return end
 							TweenService:Create(Option, hoverInfo, {
 								Size = originalSize,
 								BackgroundTransparency = CurrentSelectedOption == OptionName and 0.7 or 1
 							}):Play()
-						end)
+						end))
 					end
+				end
+
+				for _, OptionName in next, OptionTable do
+					local Option = Folder.Option:Clone()
+					Option.Name = OptionName
+					Option.Parent = Dropdown.Container.Holder.Container
+					Option.Title.Text = OptionName
+					Option.BackgroundColor3 = Config.Color
+					Option.Size = UDim2.new(1, 0, 0, Option.Title.TextBounds.Y + 5)
+					table.insert(Library.ColorTable, Option)
+
+					local originalSize = Option.Size
+
+					if Multi then
+						if InitialValue and type(InitialValue) == "table" then
+							for _, v in next, InitialValue do
+								if v == OptionName then
+									SelectedOptions[OptionName] = true
+									break
+								end
+							end
+						end
+						UpdateOptionVisual(Option, SelectedOptions[OptionName], true)
+					else
+						if InitialValue and InitialValue == OptionName then
+							UpdateSingleSelection(OptionName, true)
+						end
+					end
+
+					AddOptionConnections(Option, OptionName, originalSize)
 				end
 
 				task.spawn(function()
@@ -2560,12 +2537,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					PreCalculateSizes()
 					if InitialValue then
 						if Multi and type(InitialValue) == "table" then
-							for _, v in pairs(InitialValue) do
+							for _, v in next, InitialValue do
 								SelectedOptions[v] = true
 							end
 							UpdateText()
 						elseif not Multi then
-							for _, optionName in pairs(OptionTable) do
+							for _, optionName in next, OptionTable do
 								if optionName == InitialValue then
 									UpdateSingleSelection(InitialValue, true)
 									Callback(InitialValue)
@@ -2576,23 +2553,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end)
 
-				function DropdownInit:AddToolTip(Name)
-					if tostring(Name):gsub(" ", "") ~= "" then
-						Dropdown.MouseEnter:Connect(function()
-							Screen.ToolTip.Text = Name
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-							Screen.ToolTip.Visible = true
-						end)
-						Dropdown.MouseLeave:Connect(function()
-							Screen.ToolTip.Visible = false
-						end)
-					end
-				end
-
 				function DropdownInit:GetOption()
 					if Multi then
 						local selected = {}
-						for k, v in pairs(SelectedOptions) do
+						for k, v in next, SelectedOptions do
 							if v then table.insert(selected, k) end
 						end
 						return selected
@@ -2605,11 +2569,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if Multi then
 						SelectedOptions = {}
 						if type(value) == "table" then
-							for _, v in ipairs(value) do
+							for _, v in next, value do
 								SelectedOptions[v] = true
 							end
 						end
-						for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+						for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 							if child:IsA("TextButton") then
 								UpdateOptionVisual(child, SelectedOptions[child.Name])
 							end
@@ -2624,20 +2588,25 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function DropdownInit:SetVisible(Visible: boolean)
-					Dropdown.Visible = Visible
+					if Dropdown and Dropdown.Parent then
+						Dropdown.Visible = Visible
+					end
 				end
 
 				function DropdownInit:IsVisible(): boolean
-					return Dropdown.Visible
+					return Dropdown and Dropdown.Parent and Dropdown.Visible
 				end
 
 				function DropdownInit:ToggleVisibility()
-					Dropdown.Visible = not Dropdown.Visible
-					return Dropdown.Visible
+					if Dropdown and Dropdown.Parent then
+						Dropdown.Visible = not Dropdown.Visible
+						return Dropdown.Visible
+					end
+					return false
 				end
 
 				function DropdownInit:ClearOptions()
-					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 						if child:IsA("TextButton") then
 							child:Destroy()
 						end
@@ -2653,13 +2622,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 				function DropdownInit:AddOption(OptionName: string | {any}, SelectImmediately: boolean?)
 					if type(OptionName) == "table" then
-						for _, option in pairs(OptionName) do
+						for _, option in next, OptionName do
 							self:AddOption(tostring(option), SelectImmediately)
 						end
 						return
 					end
 					local str = tostring(OptionName)
-					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 						if child:IsA("TextButton") and child.Name == str then
 							return
 						end
@@ -2672,81 +2641,21 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					Option.Size = UDim2.new(1, 0, 0, Option.Title.TextBounds.Y + 5)
 					table.insert(Library.ColorTable, Option)
 					local originalSize = Option.Size
+
 					if Multi then
 						SelectedOptions[str] = false
 						if SelectImmediately then
 							SelectedOptions[str] = true
 						end
 						UpdateOptionVisual(Option, SelectedOptions[str], true)
-						Option.MouseButton1Up:Connect(function()
-							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
-							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = originalSize})
-							clickTween1:Play()
-							clickTween1.Completed:Wait()
-							clickTween2:Play()
-							SelectedOptions[str] = not SelectedOptions[str]
-							UpdateOptionVisual(Option, SelectedOptions[str])
-							UpdateText()
-							local selectedArray = {}
-							for k, v in pairs(SelectedOptions) do
-								if v then table.insert(selectedArray, k) end
-							end
-							local returnValue = Callback(selectedArray)
-							if type(returnValue) == "table" then
-								SelectedOptions = {}
-								for _, v in pairs(returnValue) do
-									SelectedOptions[v] = true
-								end
-								for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
-									if child:IsA("TextButton") then
-										UpdateOptionVisual(child, SelectedOptions[child.Name])
-									end
-								end
-								UpdateText()
-							end
-						end)
-						Option.MouseEnter:Connect(function()
-							if not SelectedOptions[str] then
-								TweenService:Create(Option, hoverInfo, {
-									BackgroundTransparency = 0.85,
-									Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 1)
-								}):Play()
-							end
-						end)
-						Option.MouseLeave:Connect(function()
-							TweenService:Create(Option, hoverInfo, {
-								Size = originalSize,
-								BackgroundTransparency = SelectedOptions[str] and 0.7 or 1
-							}):Play()
-						end)
 					else
 						if SelectImmediately then
 							UpdateSingleSelection(str, true)
 						end
-						Option.MouseButton1Click:Connect(function()
-							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
-							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = originalSize})
-							clickTween1:Play()
-							clickTween1.Completed:Wait()
-							clickTween2:Play()
-							UpdateSingleSelection(str)
-							Callback(str)
-						end)
-						Option.MouseEnter:Connect(function()
-							if CurrentSelectedOption ~= str then
-								TweenService:Create(Option, hoverInfo, {
-									BackgroundTransparency = 0.85,
-									Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, originalSize.Y.Scale, originalSize.Y.Offset + 1)
-								}):Play()
-							end
-						end)
-						Option.MouseLeave:Connect(function()
-							TweenService:Create(Option, hoverInfo, {
-								Size = originalSize,
-								BackgroundTransparency = CurrentSelectedOption == str and 0.7 or 1
-							}):Play()
-						end)
 					end
+
+					AddOptionConnections(Option, str, originalSize)
+
 					if Multi then
 						UpdateText()
 					end
@@ -2755,7 +2664,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 				function DropdownInit:RemoveOption(OptionName: string)
 					local str = tostring(OptionName)
-					for _, child in pairs(Dropdown.Container.Holder.Container:GetChildren()) do
+					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
 						if child:IsA("TextButton") and child.Name == str then
 							child:Destroy()
 							break
@@ -2798,7 +2707,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				shared.Anka.Elements[UniqueID] = DropdownInit
 				return DropdownInit
 			end
-			
+
 			-- its so skidded i just gived up
 			function SectionInit:CreateColorpicker(Name: string, Callback: (Color: Color3, Transparency: number?) -> (), IsAccentColorpicker: boolean?, WrapText: boolean?, AttachToToggle: Element?): Element
 				local ColorpickerInit: Element = {}
@@ -2808,9 +2717,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local Pallete = Folder.Palette:Clone()
 				Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
 
+				Library.Connections = Library.Connections or {}
+
 				if AttachToToggle and AttachToToggle.Type == "Toggle" then
 					local ToggleFrame = nil
-					for _, child in pairs(Section.Container:GetChildren()) do
+					for _, child in next, Section.Container:GetChildren() do
 						if child.Name == AttachToToggle.UniqueID:gsub(" %- %d+", "") .. " T" then
 							ToggleFrame = child
 							break
@@ -2818,8 +2729,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 
 					if ToggleFrame then
+						Library.Connections = Library.Connections or {}
+
 						local existingIndicators = 0
-						for _, child in pairs(ToggleFrame:GetChildren()) do
+						for _, child in next, ToggleFrame:GetChildren() do
 							if child.Name == "ColorIndicator" then
 								existingIndicators = existingIndicators + 1
 							end
@@ -2897,9 +2810,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						local Dot = GradientPalette.Dot
 
 						local function UpdateColor()
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							local currentColor = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
 							ColorIndicator.BackgroundColor3 = currentColor
-							ColorIndicator.BackgroundTransparency = CurrentTransparency
 							GlowFrame.BackgroundColor3 = currentColor
 							GradientPalette.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, 1, 1)
 							ColorPreview.BackgroundColor3 = currentColor
@@ -2951,15 +2864,23 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									end
 								end
 							end)
+							table.insert(Library.Connections, sh1tcon)
 						end
 
-						RainbowToggle.MouseButton1Click:Connect(function()
+						table.insert(Library.Connections, RainbowToggle.MouseButton1Click:Connect(function()
 							IsRainbowEnabled = not IsRainbowEnabled
 							if IsRainbowEnabled then
 								RainbowToggle.BackgroundColor3 = Config.Color or Color3.fromRGB(0, 162, 255)
 								RainbowToggle.BackgroundTransparency = Config.Transparency or 0
 								RainbowToggle.Text = "+"
 								RainbowRender = RunService.PreRender:Connect(function()
+									if not ToggleFrame or not ToggleFrame.Parent then 
+										if RainbowRender then
+											RainbowRender:Disconnect()
+											RainbowRender = nil
+										end
+										return 
+									end
 									ColorTable.Hue = (tick() * 0.5) % 1
 									ColorTable.Saturation = 1
 									ColorTable.Value = 1
@@ -2974,12 +2895,19 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									RainbowRender = nil
 								end
 							end
-						end)
+						end))
 
-						ColorIndicator.InputBegan:Connect(function(Input)
+						table.insert(Library.Connections, ColorIndicator.InputBegan:Connect(function(Input)
 							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 								if not Pallete.Visible then
 									ColorpickerRender = RunService.PreRender:Connect(function()
+										if not ToggleFrame or not ToggleFrame.Parent then 
+											if ColorpickerRender then
+												ColorpickerRender:Disconnect()
+												ColorpickerRender = nil
+											end
+											return 
+										end
 										local pos = ColorIndicator.AbsolutePosition
 										Pallete.Position = UDim2.new(0, pos.X - 129, 0, pos.Y + 20)
 									end)
@@ -2989,19 +2917,19 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									closePalette()
 								end
 							end
-						end)
+						end))
 
-						ColorIndicator.MouseEnter:Connect(function()
+						table.insert(Library.Connections, ColorIndicator.MouseEnter:Connect(function()
 							TweenService:Create(GlowFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
 								BackgroundTransparency = 0.4
 							}):Play()
-						end)
+						end))
 
-						ColorIndicator.MouseLeave:Connect(function()
+						table.insert(Library.Connections, ColorIndicator.MouseLeave:Connect(function()
 							TweenService:Create(GlowFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
 								BackgroundTransparency = 0.8
 							}):Play()
-						end)
+						end))
 
 						local function getananddRelativePosition(input, guiObject)
 							local inputPos
@@ -3026,7 +2954,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							)
 						end
 
-						GradientPalette.InputBegan:Connect(function(Input)
+						table.insert(Library.Connections, GradientPalette.InputBegan:Connect(function(Input)
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							if UserInputService:GetFocusedTextBox() == nil then
 								if Input.UserInputType == Enum.UserInputType.MouseButton1 then
 									if IsRainbowEnabled then
@@ -3037,6 +2966,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									end
 									if ColorRender then ColorRender:Disconnect() end
 									ColorRender = RunService.PreRender:Connect(function()
+										if not ToggleFrame or not ToggleFrame.Parent then 
+											if ColorRender then
+												ColorRender:Disconnect()
+												ColorRender = nil
+											end
+											return 
+										end
 										local relativePos = fakuroblox(Input, GradientPalette)
 										local clampedX = math.clamp(relativePos.X, 0, 1)
 										local clampedY = math.clamp(relativePos.Y, 0, 1)
@@ -3054,6 +2990,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									end
 									if ColorRender then ColorRender:Disconnect() end
 									ColorRender = RunService.PreRender:Connect(function()
+										if not ToggleFrame or not ToggleFrame.Parent then 
+											if ColorRender then
+												ColorRender:Disconnect()
+												ColorRender = nil
+											end
+											return 
+										end
 										local relativePos = getananddRelativePosition(Input, GradientPalette)
 										local clampedX = math.clamp(relativePos.X, 0, 1)
 										local clampedY = math.clamp(relativePos.Y, 0, 1)
@@ -3064,15 +3007,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									end)
 								end
 							end
-						end)
+						end))
 
-						GradientPalette.InputEnded:Connect(function(Input)
+						table.insert(Library.Connections, GradientPalette.InputEnded:Connect(function(Input)
 							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 								if ColorRender then ColorRender:Disconnect() end
 							end
-						end)
+						end))
 
-						ColorSlider.InputBegan:Connect(function(Input)
+						table.insert(Library.Connections, ColorSlider.InputBegan:Connect(function(Input)
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							if UserInputService:GetFocusedTextBox() == nil then
 								if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 									if IsRainbowEnabled then
@@ -3086,44 +3030,61 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									end
 									if HueRender then HueRender:Disconnect() end
 									HueRender = RunService.PreRender:Connect(function()
+										if not ToggleFrame or not ToggleFrame.Parent then 
+											if HueRender then
+												HueRender:Disconnect()
+												HueRender = nil
+											end
+											return 
+										end
 										local relativePos = getananddRelativePosition(Input, ColorSlider)
 										ColorTable.Hue = 1 - math.clamp(relativePos.X, 0, 1)
 										UpdateColor()
 									end)
 								end
 							end
-						end)
+						end))
 
-						ColorSlider.InputEnded:Connect(function(Input)
+						table.insert(Library.Connections, ColorSlider.InputEnded:Connect(function(Input)
 							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 								if HueRender then HueRender:Disconnect() end
 							end
-						end)
+						end))
 
-						TransparencySlider.InputBegan:Connect(function(Input)
+						table.insert(Library.Connections, TransparencySlider.InputBegan:Connect(function(Input)
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							if UserInputService:GetFocusedTextBox() == nil then
 								if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 									if TransparencyRender then TransparencyRender:Disconnect() end
 									TransparencyRender = RunService.PreRender:Connect(function()
+										if not ToggleFrame or not ToggleFrame.Parent then 
+											if TransparencyRender then
+												TransparencyRender:Disconnect()
+												TransparencyRender = nil
+											end
+											return 
+										end
 										local relativePos = getananddRelativePosition(Input, TransparencySlider)
 										CurrentTransparency = math.clamp(relativePos.X, 0, 1)
 										UpdateColor()
 									end)
 								end
 							end
-						end)
+						end))
 
-						TransparencySlider.InputEnded:Connect(function(Input)
+						table.insert(Library.Connections, TransparencySlider.InputEnded:Connect(function(Input)
 							if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 								if TransparencyRender then TransparencyRender:Disconnect() end
 							end
-						end)
+						end))
 
 						local function UpdateTransparencySlider()
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							TransparencySlider.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
 						end
 
-						InputBox.FocusLost:Connect(function(Enter)
+						table.insert(Library.Connections, InputBox.FocusLost:Connect(function(Enter)
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							if Enter then
 								local input = string.gsub(InputBox.Text, " ", "")
 								local colorValues = string.split(input, ",")
@@ -3141,9 +3102,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								end
 								InputBox.Text = ""
 							end
-						end)
+						end))
 
 						function ColorpickerInit:UpdateColor(Color, Transparency)
+							if not ToggleFrame or not ToggleFrame.Parent then return end
 							Transparency = Transparency or 0
 							if IsRainbowEnabled then
 								IsRainbowEnabled = false
@@ -3265,7 +3227,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local function UpdateColor()
 					local currentColor = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
 					Colorpicker.Color.BackgroundColor3 = currentColor
-					Colorpicker.Color.BackgroundTransparency = CurrentTransparency
 					GradientPalette.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, 1, 1)
 					ColorPreview.BackgroundColor3 = currentColor
 					ColorPreview.BackgroundTransparency = CurrentTransparency
@@ -3318,13 +3279,20 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end)
 				end
 
-				RainbowToggle.MouseButton1Click:Connect(function()
+				table.insert(Library.Connections, RainbowToggle.MouseButton1Click:Connect(function()
 					IsRainbowEnabled = not IsRainbowEnabled
 					if IsRainbowEnabled then
 						RainbowToggle.BackgroundColor3 = Config.Color or Color3.fromRGB(0, 162, 255)
 						RainbowToggle.BackgroundTransparency = Config.Transparency or 0
 						RainbowToggle.Text = "+"
 						RainbowRender = RunService.PreRender:Connect(function()
+							if not Colorpicker or not Colorpicker.Parent then 
+								if RainbowRender then
+									RainbowRender:Disconnect()
+									RainbowRender = nil
+								end
+								return 
+							end
 							ColorTable.Hue = (tick() * 0.5) % 1
 							ColorTable.Saturation = 1
 							ColorTable.Value = 1
@@ -3339,12 +3307,20 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							RainbowRender = nil
 						end
 					end
-				end)
+				end))
 
-				Colorpicker.InputBegan:Connect(function(Input)
+				table.insert(Library.Connections, Colorpicker.InputBegan:Connect(function(Input)
+					if not Colorpicker or not Colorpicker.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 						if not Pallete.Visible then
 							ColorpickerRender = RunService.PreRender:Connect(function()
+								if not Colorpicker or not Colorpicker.Parent then 
+									if ColorpickerRender then
+										ColorpickerRender:Disconnect()
+										ColorpickerRender = nil
+									end
+									return 
+								end
 								local pos = Colorpicker.Color.AbsolutePosition
 								Pallete.Position = UDim2.new(0, pos.X - 129, 0, pos.Y + 52)
 							end)
@@ -3354,7 +3330,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							closePalette()
 						end
 					end
-				end)
+				end))
 
 				local function getananddRelativePosition(input, guiObject)
 					local inputPos
@@ -3379,7 +3355,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					)
 				end
 
-				GradientPalette.InputBegan:Connect(function(Input)
+				table.insert(Library.Connections, GradientPalette.InputBegan:Connect(function(Input)
+					if not Colorpicker or not Colorpicker.Parent then return end
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 then
 							if IsRainbowEnabled then
@@ -3390,6 +3367,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							end
 							if ColorRender then ColorRender:Disconnect() end
 							ColorRender = RunService.PreRender:Connect(function()
+								if not Colorpicker or not Colorpicker.Parent then 
+									if ColorRender then
+										ColorRender:Disconnect()
+										ColorRender = nil
+									end
+									return 
+								end
 								local relativePos = fakuroblox(Input, GradientPalette)
 								local clampedX = math.clamp(relativePos.X, 0, 1)
 								local clampedY = math.clamp(relativePos.Y, 0, 1)
@@ -3407,6 +3391,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							end
 							if ColorRender then ColorRender:Disconnect() end
 							ColorRender = RunService.PreRender:Connect(function()
+								if not Colorpicker or not Colorpicker.Parent then 
+									if ColorRender then
+										ColorRender:Disconnect()
+										ColorRender = nil
+									end
+									return 
+								end
 								local relativePos = getananddRelativePosition(Input, GradientPalette)
 								local clampedX = math.clamp(relativePos.X, 0, 1)
 								local clampedY = math.clamp(relativePos.Y, 0, 1)
@@ -3417,15 +3408,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							end)
 						end
 					end
-				end)
+				end))
 
-				GradientPalette.InputEnded:Connect(function(Input)
+				table.insert(Library.Connections, GradientPalette.InputEnded:Connect(function(Input)
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 						if ColorRender then ColorRender:Disconnect() end
 					end
-				end)
+				end))
 
-				ColorSlider.InputBegan:Connect(function(Input)
+				table.insert(Library.Connections, ColorSlider.InputBegan:Connect(function(Input)
+					if not Colorpicker or not Colorpicker.Parent then return end
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							if IsRainbowEnabled then
@@ -3439,63 +3431,59 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							end
 							if HueRender then HueRender:Disconnect() end
 							HueRender = RunService.PreRender:Connect(function()
+								if not Colorpicker or not Colorpicker.Parent then 
+									if HueRender then
+										HueRender:Disconnect()
+										HueRender = nil
+									end
+									return 
+								end
 								local relativePos = getananddRelativePosition(Input, ColorSlider)
 								ColorTable.Hue = 1 - math.clamp(relativePos.X, 0, 1)
 								UpdateColor()
 							end)
 						end
 					end
-				end)
+				end))
 
-				ColorSlider.InputEnded:Connect(function(Input)
+				table.insert(Library.Connections, ColorSlider.InputEnded:Connect(function(Input)
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 						if HueRender then HueRender:Disconnect() end
 					end
-				end)
+				end))
 
-				TransparencySlider.InputBegan:Connect(function(Input)
+				table.insert(Library.Connections, TransparencySlider.InputBegan:Connect(function(Input)
+					if not Colorpicker or not Colorpicker.Parent then return end
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							if TransparencyRender then TransparencyRender:Disconnect() end
 							TransparencyRender = RunService.PreRender:Connect(function()
+								if not Colorpicker or not Colorpicker.Parent then 
+									if TransparencyRender then
+										TransparencyRender:Disconnect()
+										TransparencyRender = nil
+									end
+									return 
+								end
 								local relativePos = getananddRelativePosition(Input, TransparencySlider)
 								CurrentTransparency = math.clamp(relativePos.X, 0, 1)
 								UpdateColor()
 							end)
 						end
 					end
-				end)
+				end))
 
-				TransparencySlider.InputEnded:Connect(function(Input)
+				table.insert(Library.Connections, TransparencySlider.InputEnded:Connect(function(Input)
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 						if TransparencyRender then TransparencyRender:Disconnect() end
 					end
-				end)
-
+				end))
+				
 				local function UpdateTransparencySlider()
+					if not Colorpicker or not Colorpicker.Parent then return end
 					TransparencySlider.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
 				end
-
-				InputBox.FocusLost:Connect(function(Enter)
-					if Enter then
-						local input = string.gsub(InputBox.Text, " ", "")
-						local colorValues = string.split(input, ",")
-						if #colorValues >= 3 then
-							local r = math.clamp(tonumber(colorValues[1]) or 255, 0, 255)
-							local g = math.clamp(tonumber(colorValues[2]) or 0, 0, 255)
-							local b = math.clamp(tonumber(colorValues[3]) or 0, 0, 255)
-							local a = 255
-							if #colorValues >= 4 then
-								a = math.clamp(tonumber(colorValues[4]) or 255, 0, 255)
-							end
-							local newColor = Color3.fromRGB(r, g, b)
-							local newTransparency = 1 - (a / 255)
-							ColorpickerInit:UpdateColor(newColor, newTransparency)
-						end
-						InputBox.Text = ""
-					end
-				end)
-
+				
 				function ColorpickerInit:UpdateColor(Color, Transparency)
 					Transparency = Transparency or 0
 					if IsRainbowEnabled then
@@ -3519,33 +3507,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if IsRainbowEnabled and AccentColor then
 						RainbowToggle.BackgroundColor3 = AccentColor
 						RainbowToggle.BackgroundTransparency = AccentTransparency or 0
-					end
-				end
-
-				function ColorpickerInit:AddToolTip(Name)
-					if tostring(Name):gsub(" ", "") ~= "" then
-						Colorpicker.MouseEnter:Connect(function()
-							Screen.ToolTip.Text = Name
-							Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-							Screen.ToolTip.Visible = true
-						end)
-
-						Colorpicker.MouseLeave:Connect(function()
-							Screen.ToolTip.Visible = false
-						end)
-
-						local touchTooltipDebounce = false
-						Colorpicker.TouchTap:Connect(function()
-							if not touchTooltipDebounce then
-								touchTooltipDebounce = true
-								Screen.ToolTip.Text = Name
-								Screen.ToolTip.Size = UDim2.new(0, Screen.ToolTip.TextBounds.X + 5, 0, Screen.ToolTip.TextBounds.Y + 5)
-								Screen.ToolTip.Visible = true
-								task.wait(2)
-								Screen.ToolTip.Visible = false
-								touchTooltipDebounce = false
-							end
-						end)
 					end
 				end
 
@@ -3664,19 +3625,19 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 	local ClearButton = Topbar:FindFirstChild("SearchBar").ClearButton
 
-	Topbar.SearchBar.Changed:Connect(function(Property)
+	table.insert(Library.Connections, Topbar.SearchBar.Changed:Connect(function(Property)
 		if Property == "Text" then
 			ClearButton.Visible = Topbar.SearchBar.Text ~= ""
 		end
-	end)
+	end))
 
-	ClearButton.MouseButton1Click:Connect(function()
+	table.insert(Library.Connections, ClearButton.MouseButton1Click:Connect(function()
 		Topbar.SearchBar.Text = ""
-	end)
+	end))
 
-	ClearButton.TouchTap:Connect(function()
+	table.insert(Library.Connections, ClearButton.TouchTap:Connect(function()
 		Topbar.SearchBar.Text = ""
-	end)
+	end))
 
 	function Library:GetTextBounds(Text, Font, Size, Resolution)
 		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
@@ -3765,16 +3726,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 	local uitoggle = Config.Keybind
 	local toggleboleanshit = true
-	UserInputService.InputBegan:Connect(function(input, gp)
+	table.insert(Library.Connections, UserInputService.InputBegan:Connect(function(input, gp)
 		if UserInputService:GetFocusedTextBox() == nil and input.KeyCode == uitoggle and not gp then
 			toggleboleanshit = not toggleboleanshit
 			Toggle(toggleboleanshit)
 		end
-	end)
+	end))
 	function Library:ChangeToggleKeybind(newbindomg)
 		uitoggle = newbindomg
 	end
-	
+
 	local function cparticle()
 		local particle = Instance.new("Frame")
 		particle.Size = UDim2.new(0, 2, 0, 2)
@@ -3810,13 +3771,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		end
 	end
-	
+
 	function WindowInit:CreateParticles(enableParticles)
 		if enableParticles then
 			if not self.particles then
 				self.particles = {}
 			end
-
 			if not self.particlesFrame then
 				self.particlesFrame = Instance.new("Frame")
 				self.particlesFrame.Name = "ParticlesFrame"
@@ -3824,9 +3784,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				self.particlesFrame.BackgroundTransparency = 1
 				self.particlesFrame.Parent = Screen.Main
 			end
-
-			if not self.particleConnection then
-				self.particleConnection = RunService.Heartbeat:Connect(function(deltaTime)
+			if not Library.Connections.ParticleConnection then
+				Library.Connections.ParticleConnection = RunService.Heartbeat:Connect(function(deltaTime)
 					if math.random() < 0.1 then
 						cparticle()
 					end
@@ -3834,25 +3793,99 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end)
 			end
 		else
-			if self.particleConnection then
-				self.particleConnection:Disconnect()
-				self.particleConnection = nil
+			if Library.Connections.ParticleConnection then
+				Library.Connections.ParticleConnection:Disconnect()
+				Library.Connections.ParticleConnection = nil
 			end
-
 			if self.particlesFrame then
 				self.particlesFrame:Destroy()
 				self.particlesFrame = nil
 			end
-
 			if self.particles then
-				for _, particle in ipairs(self.particles) do
+				for _, particle in next, self.particles do
 					particle.frame:Destroy()
 				end
 				self.particles = {}
 			end
 		end
 	end
+
+	function WindowInit:Destroy()
+		if self.particles then
+			for _, particle in next, self.particles do
+				if particle.frame then
+					particle.frame:Destroy()
+				end
+			end
+			self.particles = {}
+		end
+		if self.particlesFrame then
+			self.particlesFrame:Destroy()
+			self.particlesFrame = nil
+		end
+		if self.ReopenButton then
+			self.ReopenButton:Destroy()
+			self.ReopenButton = nil
+		end
+		for i = #Library.ColorTable, 1, -1 do
+			if Library.ColorTable[i] == Screen or (Library.ColorTable[i].IsDescendantOf and Library.ColorTable[i]:IsDescendantOf(Screen)) then
+				table.remove(Library.ColorTable, i)
+			end
+		end
+		if Notifications and Notifications.Container then
+			Notifications.Container:Destroy()
+		end
+		if Notifications then
+			Notifications:Destroy()
+		end
+	end
 	
+	function Library:Destroy()
+		WindowInit:Destroy()
+		if shared.Anka and shared.Anka.Elements then
+			local vvvvvv = 0
+			for _ in next, shared.Anka.Elements do
+				vvvvvv += 1
+			end
+			--print("Destroyed " .. vvvvvv .. " elements")
+			shared.Anka.Elements = {}
+		end
+		if Library.Connections then
+			local vvvvvxx = 0
+			for i, connection in next, Library.Connections do
+				if connection and connection.Disconnect then
+					connection:Disconnect()
+					Library.Connections[i] = nil
+					vvvvvxx += 1
+				end
+			end
+			--print("Disconnected " .. vvvvvxx .. " connections")
+			Library.Connections = {}
+		end
+		if Library.Flags then
+			local flagsdd = 0
+			for i, v in next, Library.Flags do
+				if v and v.Disconnect then
+					v:Disconnect()
+					Library.Flags[i] = nil
+					flagsdd += 1
+				end
+			end
+			--print("Disconnected " .. flagsdd .. " flag connections")
+		end
+
+		Library.ColorTable = {}
+		if shared.Anka then
+			shared.Anka.ElementCounter = 0
+		end
+		if Screen then
+			Screen:Destroy()
+		end
+		Library.tick = nil
+		Library.Flags = nil
+		--print("Library destroyed")
+	end
+
 	return WindowInit
 end
 
