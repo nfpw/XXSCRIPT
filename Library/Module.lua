@@ -3877,6 +3877,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
     					v:Disconnect()
     					tbl[i] = nil
     					flagsdd += 1
+					elseif type(v) == "boolean" then
+                    	tbl[i] = false
 					end
         		end
     		end
