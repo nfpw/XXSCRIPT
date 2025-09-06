@@ -3870,7 +3870,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
             		if v and type(v) == "table" then
                 		didcone(v)
             		elseif v and v.Disconnect then
-                		v:Disconnect()
+                		pcall(function() v:Disconnect() end)
                 		tbl[i] = nil
                 		flagsdd += 1
             		end
