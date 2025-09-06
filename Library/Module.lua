@@ -1649,10 +1649,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function SetState(State)
-					if not Toggle or not Toggle.Parent then
-						return
-					end
-
+					if not Toggle or not Toggle.Parent then return end
+					if not Library.flags then return end
+					
 					TweenService:Create(Toggle.Toggle, toggleAnimInfo, {}):Cancel()
 					TweenService:Create(Toggle.Title, textAnimInfo, {}):Cancel()
 					TweenService:Create(GlowFrame, glowAnimInfo, {}):Cancel()
