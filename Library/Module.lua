@@ -502,7 +502,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 	--makedraggable(Topbar, Main)
 	makedraggable(Main, Main)
-	
+
 	local Close = Topbar.Close
 	if IsMobile then
 		table.insert(Library.Connections, Close.InputBegan:Connect(function(Input)
@@ -782,6 +782,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				if v:IsA("ImageButton") then
 					v.ImageColor3 = Color
 				elseif v.Name == "GlowEffect" then
+					v.BackgroundColor3 = Color
+				elseif v.Name == "WindowGlow" and v:IsA("UIStroke") then
+					v.Color = Color
+				elseif v.Name == "GlowFrame" and v:IsA("Frame") then
 					v.BackgroundColor3 = Color
 				elseif v:IsA("TextLabel") and v.Name == "ButtonText" then
 					v.TextColor3 = Color
@@ -1390,9 +1394,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Toggle.Parent = Section.Container
 				Toggle.Title.Text = Name
 				Toggle.Size = UDim2.new(1, -10, 0, Toggle.Title.TextBounds.Y + 5)
-				
+
 				Library.Connections = Library.Connections or {}
-				
+
 				local StatusConfig = {
 					dangerous = {
 						color = Color3.fromRGB(255, 85, 85),
@@ -2069,7 +2073,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				else
 					Toggle.Title.AutomaticSize = Enum.AutomaticSize.None
 				end
-				
+
 				ToggleInit.Type = "Toggle"
 				ToggleInit.UniqueID = UniqueID
 				shared.Anka.Elements[UniqueID] = ToggleInit
@@ -2085,9 +2089,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local Slider = Folder.Slider:Clone()
 				Slider.Name = Name .. " S"
 				Slider.Parent = Section.Container
-				
+
 				Library.Connections = Library.Connections or {}
-				
+
 				Slider.Title.Text = Name
 				Slider.Slider.Bar.Size = UDim2.new(Min / Max, 0, 1, 0)
 				Slider.Slider.Bar.BackgroundColor3 = Config.Color
@@ -3479,12 +3483,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						if TransparencyRender then TransparencyRender:Disconnect() end
 					end
 				end))
-				
+
 				local function UpdateTransparencySlider()
 					if not Colorpicker or not Colorpicker.Parent then return end
 					TransparencySlider.BackgroundColor3 = Color3.fromHSV(ColorTable.Hue, ColorTable.Saturation, ColorTable.Value)
 				end
-				
+
 				function ColorpickerInit:UpdateColor(Color, Transparency)
 					Transparency = Transparency or 0
 					if IsRainbowEnabled then
@@ -3787,10 +3791,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 			if not Library.Connections.ParticleConnection then
 				Library.Connections.ParticleConnection = RunService.Heartbeat:Connect(function(deltaTime)
-					if math.random() < 0.1 then
-						cparticle()
+					if Screen and Screen.Main and Screen.Main.Visible then
+						if math.random() < 0.1 then
+							cparticle()
+						end
+						uparticle(deltaTime)
 					end
-					uparticle(deltaTime)
 				end)
 			end
 		else
@@ -3810,8 +3816,83 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		end
 	end
+	
+	--pasted from a old source
+	function WindowInit:CreateGlow(enableGlow, glowConfig)
+		glowConfig = glowConfig or {}
+		if enableGlow then
+			if self.glowEffect then
+				self:CreateGlow(false)
+			end
+			self.glowEffect = Instance.new("UIStroke")
+			self.glowEffect.Name = "WindowGlow"
+			self.glowEffect.Color = glowConfig.color or Config.Color
+			self.glowEffect.Thickness = glowConfig.thickness or 2
+			self.glowEffect.Transparency = glowConfig.transparency or 0.5
+			self.glowEffect.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			self.glowEffect.Parent = Screen.Main
+			table.insert(Library.ColorTable, self.glowEffect)
+			local pulseEnabled = glowConfig.pulse ~= false
+			local pulseSpeed = glowConfig.pulseSpeed or 2
+			local minTransparency = glowConfig.minTransparency or 0.2
+			local maxTransparency = glowConfig.maxTransparency or 0.8
+			if pulseEnabled then
+				if not Library.Connections.GlowConnection then
+					Library.Connections.GlowConnection = RunService.Heartbeat:Connect(function()
+						if self.glowEffect and self.glowEffect.Parent then
+							local pulse = math.sin(tick() * pulseSpeed)
+							local transparency = minTransparency + (maxTransparency - minTransparency) * ((pulse + 1) / 2)
+							self.glowEffect.Transparency = transparency
+						end
+					end)
+				end
+			end
+			if glowConfig.enhanced then
+				self.glowFrame = Instance.new("Frame")
+				self.glowFrame.Name = "GlowFrame"
+				self.glowFrame.Size = UDim2.new(1, glowConfig.glowSize or 8, 1, glowConfig.glowSize or 8)
+				self.glowFrame.Position = UDim2.new(0, -(glowConfig.glowSize or 8)/2, 0, -(glowConfig.glowSize or 8)/2)
+				self.glowFrame.BackgroundColor3 = glowConfig.color or Config.Color
+				self.glowFrame.BackgroundTransparency = glowConfig.frameTransparency or 0.9
+				self.glowFrame.BorderSizePixel = 0
+				self.glowFrame.ZIndex = Screen.Main.ZIndex - 1
+				self.glowFrame.Parent = Screen.Main.Parent
+				local corner = Instance.new("UICorner")
+				corner.CornerRadius = UDim2.new(0, glowConfig.cornerRadius or 8)
+				corner.Parent = self.glowFrame
+				table.insert(Library.ColorTable, self.glowFrame)
+			end
+		else
+			if Library.Connections.GlowConnection then
+				Library.Connections.GlowConnection:Disconnect()
+				Library.Connections.GlowConnection = nil
+			end
+			if self.glowEffect then
+				for i, v in next, Library.ColorTable do
+					if v == self.glowEffect then
+						table.remove(Library.ColorTable, i)
+						break
+					end
+				end
+				self.glowEffect:Destroy()
+				self.glowEffect = nil
+			end
 
+			if self.glowFrame then
+				for i, v in next, Library.ColorTable do
+					if v == self.glowFrame then
+						table.remove(Library.ColorTable, i)
+						break
+					end
+				end
+				self.glowFrame:Destroy()
+				self.glowFrame = nil
+			end
+		end
+	end
+	
 	function WindowInit:Destroy()
+		self:CreateGlow(false)
 		if self.particles then
 			for _, particle in next, self.particles do
 				if particle.frame then
@@ -3840,7 +3921,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			Notifications:Destroy()
 		end
 	end
-	
+
 	function Library:Destroy()
 		WindowInit:Destroy()
 		if shared.Anka and shared.Anka.Elements then
@@ -3864,26 +3945,26 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			Library.Connections = {}
 		end
 		if Library.flags then
-    		local flagsdd = 0
-    		local function didcone(tbl)
-        		for i, v in next, tbl do
-            		if v and type(v) == "table" then
-                		didcone(v)
+			local flagsdd = 0
+			local function didcone(tbl)
+				for i, v in next, tbl do
+					if v and type(v) == "table" then
+						didcone(v)
 					elseif v and type(v) == "userdata" and v.Disconnect then
-    					v:Disconnect()
-    					tbl[i] = nil
-    					flagsdd += 1
+						v:Disconnect()
+						tbl[i] = nil
+						flagsdd += 1
 					elseif v and type(v) == "table" and type(v.Disconnect) == "function" then
-    					v:Disconnect()
-    					tbl[i] = nil
-    					flagsdd += 1
+						v:Disconnect()
+						tbl[i] = nil
+						flagsdd += 1
 					elseif type(v) == "boolean" then
-                    	tbl[i] = false
+						tbl[i] = false
 					end
-        		end
-    		end
-    		didcone(Library.flags)
-    		--print("Disconnected " .. flagsdd .. " flag connections")
+				end
+			end
+			didcone(Library.flags)
+			--print("Disconnected " .. flagsdd .. " flag connections")
 		end
 		Library.ColorTable = {}
 		if shared.Anka then
