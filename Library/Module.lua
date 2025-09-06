@@ -1846,6 +1846,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				table.insert(Library.Connections, Toggle.InputBegan:Connect(function(Input)
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+							if not Library.flags then return end
 							ToggleState = not ToggleState
 							SetState(ToggleState)
 						end
