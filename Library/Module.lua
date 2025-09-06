@@ -3851,19 +3851,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			--print("Destroyed " .. vvvvvv .. " elements")
 			shared.Anka.Elements = {}
 		end
-		if Library.flags then
-        	local function disablebooleans(tbl)
-            	for i, v in next, tbl do
-                	if type(v) == "boolean" then
-                    	tbl[i] = false
-                	elseif type(v) == "table" and not v.Disconnect then
-                    	disablebooleans(v)
-                	end
-            	end
-        	end
-        	disablebooleans(Library.flags)
-        	task.wait(.1)
-    	end
 		if Library.Connections then
 			local vvvvvxx = 0
 			for i, connection in next, Library.Connections do
