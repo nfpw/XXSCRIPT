@@ -3869,11 +3869,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
         		for i, v in next, tbl do
             		if v and type(v) == "table" then
                 		didcone(v)
-            		elseif v and v.Disconnect then
-                		pcall(function() v:Disconnect() end)
-                		tbl[i] = nil
-                		flagsdd += 1
-            		end
+					elseif v and type(v) == "userdata" and v.Disconnect then
+    					v:Disconnect()
+    					tbl[i] = nil
+    					flagsdd += 1
+					elseif v and type(v) == "table" and type(v.Disconnect) == "function" then
+    					v:Disconnect()
+    					tbl[i] = nil
+    					flagsdd += 1
+					end
         		end
     		end
     		didcone(Library.flags)
