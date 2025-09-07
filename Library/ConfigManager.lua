@@ -225,6 +225,40 @@ do
                     shared.Anka.Elements[Idx]:SetValue(tostring(Data.value));
                 end;
             end,
+        },
+        Button = {
+            Save = function(Idx: string, Object: Element)
+                local Data = {
+                    type = "Button",
+                    idx = Idx
+                };
+                if Object.GetKeybind then
+                    local Keybind = Object:GetKeybind();
+                    if Keybind then
+                        local bindEnum = Keybind:GetBind()
+                        if bindEnum and bindEnum ~= Enum.KeyCode.Unknown then
+                            Data.keybind = tostring(bindEnum):gsub("Enum.KeyCode.", "");
+                        end;
+                    end;
+                end;
+                return Data;
+            end,
+            Load = function(Idx: string, Data: any)
+                DelayedCall(function()
+                    local element = shared.Anka.Elements[Idx]
+                    if element and Data.keybind and element.GetKeybind then
+                        local Keybind = element:GetKeybind();
+                        if Keybind then
+                            local Success, EnumValue = pcall(function()
+                                return Enum.KeyCode[Data.keybind];
+                            end);
+                            if Success and EnumValue then
+                                Keybind:SetBind(EnumValue);
+                            end;
+                        end;
+                    end;
+                end, 0.1)
+            end
         }
     };
 
