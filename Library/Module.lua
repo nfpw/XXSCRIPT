@@ -1156,15 +1156,29 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local IsHovered = false
 				table.insert(Library.ColorTable, Button)
 
-				local TweenInfo = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+				local TweenInfoe = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 				local function UpdateButtonColor()
 					if not Button or not Button.Parent then return end
 					local TargetColor = IsPressed and Config.Color or IsHovered and Color3.fromRGB(60, 60, 60) or DefaultColor
-					TweenService:Create(Button, TweenInfo, {BackgroundColor3 = TargetColor}):Play()
+					TweenService:Create(Button, TweenInfoe, {BackgroundColor3 = TargetColor}):Play()
 				end
 
-				table.insert(Library.Connections, Button.InputBegan:Connect(function(Input) 
+				local function SimulateButtonPress()
+					if not Button or not Button.Parent then return end
+					IsPressed = true
+					UpdateButtonColor()
+					task.delay(0.1, function()
+						if Button and Button.Parent then
+							IsPressed = false
+							UpdateButtonColor()
+						end
+					end)
+				end
+
+				local ButtonConnections = {}
+
+				table.insert(ButtonConnections, Button.InputBegan:Connect(function(Input) 
 					if not Button or not Button.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
 						IsPressed = true
@@ -1172,7 +1186,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end 
 				end))
 
-				table.insert(Library.Connections, Button.InputEnded:Connect(function(Input) 
+				table.insert(ButtonConnections, Button.InputEnded:Connect(function(Input) 
 					if not Button or not Button.Parent then return end
 					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then 
 						IsPressed = false
@@ -1181,7 +1195,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end 
 				end))
 
-				table.insert(Library.Connections, Button.MouseEnter:Connect(function()
+				table.insert(ButtonConnections, Button.MouseEnter:Connect(function()
 					if not Button or not Button.Parent then return end
 					IsHovered = true
 					if not IsPressed then
@@ -1189,11 +1203,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end))
 
-				table.insert(Library.Connections, Button.MouseLeave:Connect(function() 
+				table.insert(ButtonConnections, Button.MouseLeave:Connect(function() 
 					if not Button or not Button.Parent then return end
 					IsHovered = false
 					UpdateButtonColor()
 				end))
+
+				for _, connection in next, ButtonConnections do
+					table.insert(Library.Connections, connection)
+				end
 
 				function ButtonInit:SetVisible(Visible: boolean)
 					if Button and Button.Parent then
@@ -1208,9 +1226,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				function ButtonInit:ToggleVisibility()
 					if Button and Button.Parent then
 						Button.Visible = not Button.Visible
-						return Button.Visible
 					end
-					return false
 				end
 
 				function ButtonInit:UpdateColors()
@@ -1231,6 +1247,102 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							Button.Size = UDim2.new(1, -10, 0, Button.Title.TextBounds.Y + 5)
 						end
 					end
+				end
+
+				local KeybindObject = nil
+
+				function ButtonInit:CreateKeybind(Bind, KeybindCallback)
+					if UserInputService.TouchEnabled then
+						return {
+							SetBind = function() end,
+							GetBind = function() return Enum.KeyCode.Unknown end
+						}
+					end
+
+					local KeybindInit = {}
+					Bind = (typeof(Bind) == "EnumItem" and tostring(Bind):gsub("Enum.KeyCode.", "")) or Bind or "NONE"
+
+					local WaitingForBind = false
+					local Selected = Bind
+					local Blacklist = {}
+
+					Button.Keybind.Visible = true
+					Button.Keybind.Text = "[ " .. Bind .. " ]"
+
+					table.insert(Library.Connections, Button.Keybind.MouseButton1Click:Connect(function()
+						Button.Keybind.Text = "[ ... ]"
+						WaitingForBind = true
+
+						local keybindFlash = TweenService:Create(Button.Keybind, 
+							TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+								TextTransparency = 0.5
+							})
+						keybindFlash:Play()
+
+						local connection; connection = Button.Keybind:GetPropertyChangedSignal("Text"):Connect(function()
+							if Button.Keybind.Text ~= "[ ... ]" then
+								keybindFlash:Cancel()
+								Button.Keybind.TextTransparency = 0
+								connection:Disconnect()
+							end
+						end)
+						table.insert(Library.Connections, connection)
+					end))
+
+					table.insert(Library.Connections, Button.Keybind.MouseButton2Click:Connect(function()
+						Button.Keybind.Text = "[ NONE ]"
+						Selected = "NONE"
+					end))
+
+					table.insert(Library.Connections, Button.Keybind:GetPropertyChangedSignal("TextBounds"):Connect(function()
+						Button.Keybind.Size = UDim2.new(0, Button.Keybind.TextBounds.X, 1, 0)
+					end))
+
+					table.insert(Library.Connections, UserInputService.InputBegan:Connect(function(Input)
+						if UserInputService:GetFocusedTextBox() == nil then
+							if WaitingForBind and Input.UserInputType == Enum.UserInputType.Keyboard then
+								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
+								if not table.find(Blacklist, Key) then
+									Button.Keybind.Text = "[ " .. Key .. " ]"
+									Selected = Key
+									if KeybindCallback then
+										KeybindCallback(Key)
+									end
+								else
+									Button.Keybind.Text = "[ NONE ]"
+									Selected = "NONE"
+								end
+								WaitingForBind = false				
+							elseif Input.UserInputType == Enum.UserInputType.Keyboard then
+								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
+								if Key == Selected and Selected ~= "NONE" then
+									SimulateButtonPress()
+									Callback()
+									if KeybindCallback then
+										KeybindCallback(Key)
+									end
+								end
+							end
+						end
+					end))
+
+					function KeybindInit:SetBind(Key)
+						local keyString = (typeof(Key) == "EnumItem" and tostring(Key):gsub("Enum.KeyCode.", "")) or Key
+						Button.Keybind.Text = "[ " .. keyString .. " ]"
+						Selected = keyString
+					end
+
+					function KeybindInit:GetBind()
+						local success, enum = pcall(function() return Enum.KeyCode[Selected] end)
+						return success and enum or Enum.KeyCode.Unknown
+					end
+
+					KeybindObject = KeybindInit
+					return KeybindInit
+				end
+
+				function ButtonInit:GetKeybind()
+					return KeybindObject
 				end
 
 				ButtonInit.Type = "Button" 
@@ -1554,18 +1666,18 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					UpdateTitleSize()
 				end
 
-				StatusIndicator:GetPropertyChangedSignal("TextBounds"):Connect(function()
+				table.insert(Library.Connections, StatusIndicator:GetPropertyChangedSignal("TextBounds"):Connect(function()
 					if StatusLocal ~= "normal" then
 						StatusIndicator.Size = UDim2.new(0, StatusIndicator.TextBounds.X + 4, 1, 0)
 						UpdateTitleSize()
 					end
-				end)
+				end))
 
 				if InfoLocal then
-					InfoIndicator:GetPropertyChangedSignal("TextBounds"):Connect(function()
+					table.insert(Library.Connections, InfoIndicator:GetPropertyChangedSignal("TextBounds"):Connect(function()
 						InfoIndicator.Size = UDim2.new(0, InfoIndicator.TextBounds.X + 8, 0, InfoIndicator.TextBounds.X + 8)
 						UpdateTitleSize()
-					end)
+					end))
 				end
 
 				UpdateTitleSize()
@@ -1596,31 +1708,31 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						end
 					end
 
-					InfoIndicator.MouseEnter:Connect(ShowInfoTooltip)
-					InfoIndicator.MouseLeave:Connect(HideInfoTooltip)
-					InfoIndicator.TouchTap:Connect(function()
+					table.insert(Library.Connections, InfoIndicator.MouseEnter:Connect(ShowInfoTooltip))
+					table.insert(Library.Connections, InfoIndicator.MouseLeave:Connect(HideInfoTooltip))
+					table.insert(Library.Connections, InfoIndicator.TouchTap:Connect(function()
 						ShowInfoTooltip()
 						task.wait(3)
 						HideInfoTooltip()
-					end)
+					end))
 
-					InfoIndicator.MouseEnter:Connect(function()
+					table.insert(Library.Connections, InfoIndicator.MouseEnter:Connect(function()
 						local hoverTween = TweenService:Create(InfoIndicator, 
 							TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 								TextColor3 = Color3.fromRGB(255, 255, 255),
 								BackgroundTransparency = 0.1
 							})
 						hoverTween:Play()
-					end)
+					end))
 
-					InfoIndicator.MouseLeave:Connect(function()
+					table.insert(Library.Connections, InfoIndicator.MouseLeave:Connect(function()
 						local unhoverTween = TweenService:Create(InfoIndicator, 
 							TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 								TextColor3 = Color3.fromRGB(150, 150, 150),
 								BackgroundTransparency = 0.3
 							})
 						unhoverTween:Play()
-					end)
+					end))
 				end
 
 				table.insert(Library.ColorTable, Toggle.Toggle)
@@ -1768,6 +1880,16 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end))
 
+				table.insert(Library.Connections, Toggle.InputBegan:Connect(function(Input)
+					if UserInputService:GetFocusedTextBox() == nil then
+						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+							if not Library.flags then return end
+							ToggleState = not ToggleState
+							SetState(ToggleState)
+						end
+					end
+				end))
+
 				function ToggleInit:SetState(State)
 					SetState(State)
 				end
@@ -1780,19 +1902,14 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if StatusConfig[NewStatus] then
 						StatusLocal = NewStatus
 						local newconfig = StatusConfig[NewStatus]
-
 						StatusIndicator.Text = newconfig.icon
 						StatusIndicator.TextColor3 = newconfig.color
 						StatusIndicator.Visible = NewStatus ~= "normal"
-
 						GlowFrame.BackgroundColor3 = newconfig.color
-
 						if NewStatus ~= "normal" then
 							StatusIndicator.Size = UDim2.new(0, StatusIndicator.TextBounds.X + 4, 1, 0)
 						end
-
 						UpdateTitleSize()
-
 						if ToggleState then
 							Toggle.Toggle.BackgroundColor3 = newconfig.color
 							Toggle.Title.TextColor3 = newconfig.color
@@ -1846,20 +1963,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end
 
-				table.insert(Library.Connections, Toggle.InputBegan:Connect(function(Input)
-					if UserInputService:GetFocusedTextBox() == nil then
-						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-							if not Library.flags then return end
-							ToggleState = not ToggleState
-							SetState(ToggleState)
-						end
-					end
-				end))
-
 				local KeybindObject = nil
-				local KeybindMode = "toggle"
 
-				function ToggleInit:CreateKeybind(Bind, Callback, DefaultMode)
+				function ToggleInit:CreateKeybind(Bind, KeybindCallback, DefaultMode)
 					if UserInputService.TouchEnabled then
 						return {
 							SetBind = function() end,
@@ -1922,37 +2028,37 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 
 					if ToggleModeButton then
-						ToggleModeButton.MouseButton1Click:Connect(function()
+						table.insert(Library.Connections, ToggleModeButton.MouseButton1Click:Connect(function()
 							KeybindMode = "Toggle"
 							UpdateSelectedButton()
 							ModePopup.Visible = false
-						end)
+						end))
 					end
 
 					if HoldModeButton then
-						HoldModeButton.MouseButton1Click:Connect(function()
+						table.insert(Library.Connections, HoldModeButton.MouseButton1Click:Connect(function()
 							KeybindMode = "Hold"
 							UpdateSelectedButton()
 							ModePopup.Visible = false
-						end)
+						end))
 					end
 
 					if RemoveKeybindButton then
-						RemoveKeybindButton.MouseButton1Click:Connect(function()
+						table.insert(Library.Connections, RemoveKeybindButton.MouseButton1Click:Connect(function()
 							Toggle.Keybind.Text = "[ NONE ]"
 							Selected = "NONE"
 							ModePopup.Visible = false
-						end)
+						end))
 					end
 
-					Toggle.Keybind.MouseButton2Click:Connect(function()
+					table.insert(Library.Connections, Toggle.Keybind.MouseButton2Click:Connect(function()
 						if ModePopup then
 							ModePopup.Visible = not ModePopup.Visible
 							ModePopup.Position = UDim2.new(0, Toggle.Keybind.AbsolutePosition.X - Toggle.AbsolutePosition.X, 1, 5)
 						end
-					end)
+					end))
 
-					Toggle.Keybind.InputBegan:Connect(function(Input)
+					table.insert(Library.Connections, Toggle.Keybind.InputBegan:Connect(function(Input)
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							Toggle.Keybind.Text = "[ ... ]"
 							WaitingForBind = true
@@ -1970,23 +2076,24 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 									connection:Disconnect()
 								end
 							end)
+							table.insert(Library.Connections, connection)
 						end
-					end)
+					end))
 
-					Toggle.Keybind:GetPropertyChangedSignal("TextBounds"):Connect(function()
+					table.insert(Library.Connections, Toggle.Keybind:GetPropertyChangedSignal("TextBounds"):Connect(function()
 						Toggle.Keybind.Size = UDim2.new(0, Toggle.Keybind.TextBounds.X, 1, 0)
 						UpdateTitleSize()
-					end)
+					end))
 
-					UserInputService.InputBegan:Connect(function(Input)
+					table.insert(Library.Connections, UserInputService.InputBegan:Connect(function(Input)
 						if UserInputService:GetFocusedTextBox() == nil then
 							if WaitingForBind and Input.UserInputType == Enum.UserInputType.Keyboard then
 								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
 								if not table.find(Blacklist, Key) then
 									Toggle.Keybind.Text = "[ " .. Key .. " ]"
 									Selected = Key
-									if Callback then
-										Callback(Key)
+									if KeybindCallback then
+										KeybindCallback(Key)
 									end
 								else
 									Toggle.Keybind.Text = "[ NONE ]"
@@ -1995,32 +2102,32 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								WaitingForBind = false
 							elseif Input.UserInputType == Enum.UserInputType.Keyboard then
 								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
-								if Key == Selected then
+								if Key == Selected and Selected ~= "NONE" then
 									if KeybindMode == "Toggle" then
 										ToggleState = not ToggleState
 										SetState(ToggleState)
-										if Callback then
-											Callback(Key)
+										if KeybindCallback then
+											KeybindCallback(Key)
 										end
 									elseif KeybindMode == "Hold" then
 										SetState(true)
-										if Callback then
-											Callback(Key)
+										if KeybindCallback then
+											KeybindCallback(Key)
 										end
 									end
 								end
 							end
 						end
-					end)
+					end))
 
-					UserInputService.InputEnded:Connect(function(Input)
+					table.insert(Library.Connections, UserInputService.InputEnded:Connect(function(Input)
 						if KeybindMode == "Hold" and Input.UserInputType == Enum.UserInputType.Keyboard then
 							local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
-							if Key == Selected then
+							if Key == Selected and Selected ~= "NONE" then
 								SetState(false)
 							end
 						end
-					end)
+					end))
 
 					function KeybindInit:SetBind(Key)
 						local keyString = (typeof(Key) == "EnumItem" and tostring(Key):gsub("Enum.KeyCode.", "")) or Key
@@ -2053,16 +2160,21 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function ToggleInit:SetVisible(Visible: boolean)
-					Toggle.Visible = Visible
+					if Toggle and Toggle.Parent then
+						Toggle.Visible = Visible
+					end
 				end
 
 				function ToggleInit:IsVisible(): boolean
-					return Toggle.Visible
+					return Toggle and Toggle.Parent and Toggle.Visible
 				end
 
 				function ToggleInit:ToggleVisibility()
-					Toggle.Visible = not Toggle.Visible
-					return Toggle.Visible
+					if Toggle and Toggle.Parent then
+						Toggle.Visible = not Toggle.Visible
+						return Toggle.Visible
+					end
+					return false
 				end
 
 				Toggle.Title.TextWrapped = WrapText or false
