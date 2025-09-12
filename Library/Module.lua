@@ -4060,23 +4060,25 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			local flagsdd = 0
 			local function didcone(tbl)
 				for i, v in next, tbl do
-					if v and type(v) == "table" then
+					if type(v) == "table" then
 						didcone(v)
-					elseif v and type(v) == "userdata" and v.Disconnect then
+					elseif typeof(v) == "RBXScriptConnection" then
 						v:Disconnect()
 						tbl[i] = nil
 						flagsdd += 1
-					elseif v and type(v) == "table" and type(v.Disconnect) == "function" then
+					elseif type(v) == "table" and type(v.Disconnect) == "function" then
 						v:Disconnect()
 						tbl[i] = nil
 						flagsdd += 1
 					elseif type(v) == "boolean" then
 						tbl[i] = false
+					elseif type(v) == "function" then
+						tbl[i] = nil
 					end
 				end
 			end
 			didcone(Library.flags)
-			--print("Disconnected " .. flagsdd .. " flag connections")
+			-- print("Disconnected " .. flagsdd .. " flag connections")
 		end
 		Library.ColorTable = {}
 		if shared.Anka then
