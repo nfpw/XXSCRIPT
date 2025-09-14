@@ -30,7 +30,6 @@ local function getservice(v) return cloneref(game:GetService(v)); end
 local players = getservice('Players')
 local localplayer = players.LocalPlayer
 local workspace = getservice('Workspace')
-local gamecamera = workspace.CurrentCamera or workspace.Camera
 
 local function connectevent(eventtable, callback)
 	table.insert(eventtable, callback)
@@ -68,8 +67,7 @@ local gameconfigs = {
 		npcteam = "Mob",
 		npcname = function(character)
 			return character.Name 
-		end,
-		wallcheckparts = {"Head", "HumanoidRootPart", "Torso"}
+		end
 	},
 	]]
 }
@@ -82,7 +80,6 @@ local currentconfig = gameconfigs[entityhandler.gameid] or {
 	isalivecheck = function(character, humanoid) return humanoid and humanoid.Health > 0 end,
 	gethp = function(character, humanoid) return humanoid and humanoid.Health or 0 end,
 	getmaxhp = function(character, humanoid) return humanoid and humanoid.MaxHealth or 100 end,
-	wallcheckparts = {"Head", "HumanoidRootPart", "Torso"},
 	--npcfolders = {workspace},
 	--npccheck = function(character) 
 	--	return character:FindFirstChild('Humanoid') and not players:GetPlayerFromCharacter(character)
@@ -128,39 +125,6 @@ local function getmaxhp(character)
 	return currentconfig.getmaxhp(character, humanoid)
 end
 
-local function wallcheck(origin, position, ignoreobject)
-	if typeof(ignoreobject) ~= 'Instance' then
-		local ignorelist = {gamecamera}
-		if localplayer.Character then
-			table.insert(ignorelist, localplayer.Character)
-		end
-		if entityhandler.entities then
-			for _, entity in pairs(entityhandler.entities) do
-				if entity.character then
-					table.insert(ignorelist, entity.character)
-				end
-			end
-		end
-		if entityhandler.npcs then
-			for _, entity in pairs(entityhandler.npcs) do
-				if entity.character then
-					table.insert(ignorelist, entity.character)
-				end
-			end
-		end
-		if typeof(ignoreobject) == 'table' then
-			for _, v in pairs(ignoreobject) do
-				table.insert(ignorelist, v)
-			end
-		end
-		local raycastparams = RaycastParams.new()
-		raycastparams.FilterDescendantsInstances = ignorelist
-		raycastparams.FilterType = Enum.RaycastFilterType.Blacklist
-		ignoreobject = raycastparams
-	end
-	return workspace:Raycast(origin, (position - origin), ignoreobject)
-end
-
 local function createentity(character, player, isnpc)
 	local humanoid = character:WaitForChild('Humanoid', 5)
 	local rootpart = character:WaitForChild('HumanoidRootPart', 5) or character:WaitForChild('Torso', 5)
@@ -177,27 +141,16 @@ local function createentity(character, player, isnpc)
 		maxhp = currentconfig.getmaxhp(character, humanoid),
 		islocalplayer = player == localplayer,
 		isnpc = isnpc or false,
-		name = isnpc and currentconfig.npcname and currentconfig.npcname(character) or (player and player.Name or "Unknown"),
+		name = isnpc and currentconfig.npcname(character) or (player and player.Name or "Unknown"),
 		team = isnpc and currentconfig.npcteam or (player and currentconfig.teamcheck(player)),
 		issameteam = not isnpc and player and issameteam(player) or false,
-		isbehindwall = false,
 		connections = {}
 	}
-	local function updatewallcheck()
-		if entity.rootpart and localplayer.Character and localplayer.Character:FindFirstChild('Head') then
-			local origin = localplayer.Character.Head.Position
-			local targetpos = entity.rootpart.Position
-			local result = wallcheck(origin, targetpos)
-			entity.isbehindwall = result ~= nil
-		end
-	end
-	updatewallcheck()
 	local healthconnection = humanoid:GetPropertyChangedSignal('Health'):Connect(function()
 		local wasalive = entity.isalive
 		entity.isalive = currentconfig.isalivecheck(character, humanoid)
 		entity.hp = currentconfig.gethp(character, humanoid)
 		entity.maxhp = currentconfig.getmaxhp(character, humanoid)
-		updatewallcheck()
 		if wasalive and not entity.isalive then
 			if entity.isnpc then
 				fireevent(entityhandler.events.npcdied, entity)
@@ -212,12 +165,6 @@ local function createentity(character, player, isnpc)
 			end
 		end
 	end)
-	if entity.rootpart then
-		local positionconnection = entity.rootpart:GetPropertyChangedSignal('Position'):Connect(function()
-			updatewallcheck()
-		end)
-		table.insert(entity.connections, positionconnection)
-	end
 	if humanoid:GetPropertyChangedSignal('MaxHealth') then
 		local maxhealthconnection = humanoid:GetPropertyChangedSignal('MaxHealth'):Connect(function()
 			entity.maxhp = currentconfig.getmaxhp(character, humanoid)
@@ -261,7 +208,7 @@ end
 
 function entityhandler:addnpc(character)
 	if not character then return end
-	if not currentconfig.npccheck or not currentconfig.npccheck(character) then return end
+	if not currentconfig.npccheck(character) then return end
 	local entity = createentity(character, nil, true)
 	if not entity then return end
 	table.insert(self.npcs, entity)
@@ -345,61 +292,6 @@ function entityhandler:getaliveentities()
 		end
 	end
 	return alive
-end
-
-function entityhandler:getvisibleentities()
-	local visible = {}
-	for _, entity in pairs(self.entities) do
-		if entity.isalive and not entity.isbehindwall then
-			table.insert(visible, entity)
-		end
-	end
-	return visible
-end
-
-function entityhandler:getwallcheck(entity, customorigin)
-	if not entity or not entity.rootpart then return true end
-	local origin = customorigin
-	if not origin then
-		local localcharacter = currentconfig.characterpath(localplayer)
-		if localcharacter then
-			local localrootpart = currentconfig.getrootpart(localcharacter)
-			if localrootpart then
-				origin = localrootpart.Position
-			else
-				return true
-			end
-		else
-			return true
-		end
-	end
-	local targetpos = entity.rootpart.Position
-	local result = wallcheck(origin, targetpos)
-	return result ~= nil
-end
-
-function entityhandler:updatewallchecks()
-	local localcharacter = currentconfig.characterpath(localplayer)
-	if not localcharacter then
-		return
-	end
-	local localrootpart = currentconfig.getrootpart(localcharacter)
-	if not localrootpart then
-		return
-	end
-	local origin = localrootpart.Position
-	for _, entity in pairs(self.entities) do
-		if entity.rootpart then
-			local result = wallcheck(origin, entity.rootpart.Position)
-			entity.isbehindwall = result ~= nil
-		end
-	end
-	for _, entity in pairs(self.npcs) do
-		if entity.rootpart then
-			local result = wallcheck(origin, entity.rootpart.Position)
-			entity.isbehindwall = result ~= nil
-		end
-	end
 end
 
 function entityhandler:getteammates()
@@ -556,7 +448,7 @@ function entityhandler:removeplayer(player)
 	end
 	local character = getplayercharacter(player)
 	if character then
-		self:removeentity(character, player == players.LocalPlayer)
+		self:removeentity(character, player == localplayer)
 	end
 end
 
@@ -579,13 +471,6 @@ function entityhandler:start()
 	end
 	self:connectnpcfolders()
 	self:scannpcs()
-	local wallcheckloop = task.spawn(function()
-		while self.running do
-			self:updatewallchecks()
-			task.wait()
-		end
-	end)
-	table.insert(self.connections, wallcheckloop)
 	self.running = true
 end
 
