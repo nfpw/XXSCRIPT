@@ -11,11 +11,11 @@ NotificationSystem.Spacing = 5
 NotificationSystem.AnimationSpeed = 0.3
 NotificationSystem.Font = Enum.Font.Gotham
 NotificationSystem.TextSize = 14
-NotificationSystem.TextColor = Color3.fromRGB(240, 240, 240)
-NotificationSystem.BackgroundColor = Color3.fromRGB(25, 25, 25)
-NotificationSystem.AccentColor = Color3.fromRGB(255, 128, 64)
+NotificationSystem.TextColor = Color3.fromRGB(234, 234, 234)
+NotificationSystem.BackgroundColor = Color3.fromRGB(35, 35, 35)
+NotificationSystem.AccentColor = Color3.fromRGB(85, 85, 85)
 NotificationSystem.BottomOffset = 10
-NotificationSystem.ShowTimer = true -- Enable/disable timer display
+NotificationSystem.ShowTimer = true
 NotificationSystem.TimerColor = Color3.fromRGB(150, 150, 150)
 
 local cloneref = cloneref or function(v) return v; end
@@ -118,17 +118,9 @@ function NotificationSystem:CreateNotification(title, content, duration)
 	inner.Parent = border3
 	local gradientFrame = Instance.new("Frame")
 	gradientFrame.Size = UDim2.new(1, 0, 0, 1)
-	gradientFrame.BackgroundColor3 = Color3.fromRGB(100, 150, 200)
+	gradientFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	gradientFrame.BorderSizePixel = 0
 	gradientFrame.Parent = inner
-	local gradient = Instance.new("UIGradient")
-	gradient.Color = ColorSequence.new{
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 150, 200)),
-		ColorSequenceKeypoint.new(0.25, Color3.fromRGB(180, 100, 160)),
-		ColorSequenceKeypoint.new(0.75, Color3.fromRGB(180, 230, 100)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 100, 160))
-	}
-	gradient.Parent = gradientFrame
 	local shadow = Instance.new("Frame")
 	shadow.Size = UDim2.new(1, 0, 0, 1)
 	shadow.Position = UDim2.new(0, 0, 0, 1)
@@ -175,11 +167,17 @@ function NotificationSystem:CreateNotification(title, content, duration)
 	end
 	local progressBar = Instance.new("Frame")
 	progressBar.Name = "ProgressBar"
-	progressBar.BackgroundColor3 = self.AccentColor
+	progressBar.BackgroundColor3 = Color3.fromRGB(247, 247, 247) --self.AccentColor
 	progressBar.BorderSizePixel = 0
 	progressBar.Size = UDim2.new(1, 0, 0, 2)
 	progressBar.Position = UDim2.new(0, 0, 1, -2)
 	progressBar.Parent = inner
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
+	}
+	gradient.Parent = progressBar
 	local slideIn = TweenService:Create(
 		notification,
 		TweenInfo.new(self.AnimationSpeed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
