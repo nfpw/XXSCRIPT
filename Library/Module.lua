@@ -934,7 +934,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		TabButton.BackgroundColor3 = Config.Color
 
 		local Underline = TabButton.Underline
-
+		table.insert(Library.ColorTable, Underline)
+		table.insert(Library.ColorTable, TabButton)
+		
 		Library.TabCount = Library.TabCount + 1
 		if Library.TabCount == 1 then
 			Library.FirstTab = Name
