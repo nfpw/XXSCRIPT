@@ -449,7 +449,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		Library.Toggle = State 
 	end
 
-	local function UpdateUIGradients(rootInstance: Instance, updateCallback: (UIGradient) -> ())
+	--[[local function UpdateUIGradients(rootInstance: Instance, updateCallback: (UIGradient) -> ())
 		local main = rootInstance:FindFirstChild("Main")
 		if main then
 			local holder = main:FindFirstChild("Holder")
@@ -475,7 +475,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		UpdateUIGradients(Screen, function(gradient)
 			gradient.Rotation = (gradient.Rotation + 45 * dt) % 360
 		end)
-	end))
+	end))]]
 
 	local ReopenButton = crebutton(Screen, Main, Config, Toggle)
 
@@ -933,16 +933,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		TabButton.Title.Text = Name
 		TabButton.BackgroundColor3 = Config.Color
 
-		local Underline = Instance.new("Frame")
-		Underline.Name = "Underline"
-		Underline.Parent = TabButton
-		Underline.BackgroundColor3 = Config.Color
-		Underline.BorderSizePixel = 0
-		Underline.Position = UDim2.new(0, 0, 1, -2)
-		Underline.Size = UDim2.new(1, 0, 0, 2)
-		Underline.Visible = false
-		table.insert(Library.ColorTable, Underline)
-		table.insert(Library.ColorTable, TabButton)
+		local Underline = TabButton.Underline
 
 		Library.TabCount = Library.TabCount + 1
 		if Library.TabCount == 1 then
@@ -1527,17 +1518,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					}
 				}
 
-				local StatusIndicator = Instance.new("TextLabel")
-				StatusIndicator.Name = "StatusIndicator"
-				StatusIndicator.Size = UDim2.new(0, 0, 1, 0)
-				StatusIndicator.Position = UDim2.new(1, -5, 0, 0)
-				StatusIndicator.BackgroundTransparency = 1
-				StatusIndicator.Text = StatusConfig[StatusLocal].icon
-				StatusIndicator.TextColor3 = StatusConfig[StatusLocal].color
-				StatusIndicator.TextScaled = false
-				StatusIndicator.Font = Enum.Font.SourceSans
-				StatusIndicator.TextSize = Toggle.Title.TextSize
-				StatusIndicator.Parent = Toggle
+				local StatusIndicator = Toggle.StatusIndicator
 				StatusIndicator.ZIndex = Toggle.ZIndex + 1
 				StatusIndicator.Visible = StatusLocal ~= "normal"
 
@@ -1545,17 +1526,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					StatusIndicator.Size = UDim2.new(0, StatusIndicator.TextBounds.X + 4, 1, 0)
 				end
 
-				local InfoIndicator = Instance.new("TextButton")
-				InfoIndicator.Name = "InfoIndicator"
-				InfoIndicator.Size = UDim2.new(0, 0, 1, 0)
-				InfoIndicator.Position = UDim2.new(1, -5, 0, 0)
-				InfoIndicator.BackgroundTransparency = 1
-				InfoIndicator.Text = "?"
-				InfoIndicator.TextColor3 = Color3.fromRGB(150, 150, 150)
-				InfoIndicator.TextScaled = false
-				InfoIndicator.Font = Enum.Font.SourceSansBold
-				InfoIndicator.TextSize = Toggle.Title.TextSize
-				InfoIndicator.Parent = Toggle
+				local InfoIndicator = Toggle.InfoIndicator
 				InfoIndicator.ZIndex = Toggle.ZIndex + 1
 				InfoIndicator.Visible = InfoLocal ~= nil
 				InfoIndicator.BorderSizePixel = 0
@@ -1564,10 +1535,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					InfoIndicator.Size = UDim2.new(0, InfoIndicator.TextBounds.X + 8, 0, InfoIndicator.TextBounds.X + 8)
 					InfoIndicator.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 					InfoIndicator.BackgroundTransparency = 0.3
-					local InfoCorner = Instance.new("UICorner")
-					InfoCorner.CornerRadius = UDim.new(0.5, 0)
-					InfoCorner.Parent = InfoIndicator
-					InfoIndicator.Position = UDim2.new(1, -InfoIndicator.Size.X.Offset - 5, 0.5, -InfoIndicator.Size.Y.Offset/2)
 				end
 
 				local InfoTooltip = nil
@@ -1576,28 +1543,35 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					InfoTooltip.Name = "InfoTooltip"
 					InfoTooltip.Size = UDim2.new(0, 200, 0, 50)
 					InfoTooltip.Position = UDim2.new(0, 0, 1, 5)
-					InfoTooltip.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-					InfoTooltip.BorderSizePixel = 0
+					InfoTooltip.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+					InfoTooltip.BorderSizePixel = 1
+					InfoTooltip.BorderColor3 = Color3.fromRGB(55, 55, 55)
 					InfoTooltip.Visible = false
 					InfoTooltip.ZIndex = Toggle.ZIndex + 10
 					InfoTooltip.Parent = Toggle
 
-					local TooltipCorner = Instance.new("UICorner")
-					TooltipCorner.CornerRadius = UDim.new(0, 4)
-					TooltipCorner.Parent = InfoTooltip
-
 					local TooltipShadow = Instance.new("Frame")
 					TooltipShadow.Name = "Shadow"
-					TooltipShadow.Size = UDim2.new(1, 4, 1, 4)
-					TooltipShadow.Position = UDim2.new(0, 2, 0, 2)
+					TooltipShadow.Size = UDim2.new(1, 8, 1, 8)
+					TooltipShadow.Position = UDim2.new(0, 4, 0, 4)
 					TooltipShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-					TooltipShadow.BackgroundTransparency = 0.8
+					TooltipShadow.BackgroundTransparency = 0.7
 					TooltipShadow.BorderSizePixel = 0
 					TooltipShadow.ZIndex = InfoTooltip.ZIndex - 1
 					TooltipShadow.Parent = InfoTooltip
 
-					local ShadowCorner = TooltipCorner:Clone()
+					local ShadowCorner = Instance.new("UICorner")
+					ShadowCorner.CornerRadius = UDim.new(0, 6)
 					ShadowCorner.Parent = TooltipShadow
+
+					local AccentLine = Instance.new("Frame")
+					AccentLine.Name = "AccentLine"
+					AccentLine.Size = UDim2.new(1, 0, 0, 2)
+					AccentLine.Position = UDim2.new(0, 0, 0, 0)
+					AccentLine.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+					AccentLine.BorderSizePixel = 0
+					AccentLine.ZIndex = InfoTooltip.ZIndex + 1
+					AccentLine.Parent = InfoTooltip
 
 					local TooltipText = Instance.new("TextLabel")
 					TooltipText.Name = "Text"
@@ -1614,7 +1588,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					TooltipText.TextYAlignment = Enum.TextYAlignment.Top
 					TooltipText.ZIndex = InfoTooltip.ZIndex + 1
 					TooltipText.Parent = InfoTooltip
-
+					task.wait()
 					local textBounds = TooltipText.TextBounds
 					InfoTooltip.Size = UDim2.new(0, math.max(textBounds.X + 10, 150), 0, textBounds.Y + 10)
 					InfoTooltip.Position = UDim2.new(1, -InfoTooltip.Size.X.Offset, 1, 5)
@@ -1744,15 +1718,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local glowAnimInfo = TweenInfo.new(0.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
 				local statusAnimInfo = TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 
-				local GlowFrame = Instance.new("Frame")
-				GlowFrame.Name = "GlowEffect"
-				GlowFrame.Size = UDim2.new(1, 4, 1, 4)
-				GlowFrame.Position = UDim2.new(0, -2, 0, -2)
-				GlowFrame.BackgroundColor3 = StatusConfig[StatusLocal].color
-				GlowFrame.BackgroundTransparency = 1
-				GlowFrame.BorderSizePixel = 0
-				GlowFrame.Parent = Toggle.Toggle
-				GlowFrame.ZIndex = Toggle.Toggle.ZIndex + 1
+				local GlowFrame = Toggle.Toggle.GlowEffect
 
 				if StatusLocal == "normal" then
 					table.insert(Library.ColorTable, GlowFrame)
@@ -2015,8 +1981,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							local gradient = Instance.new("UIGradient")
 							gradient.Name = "SelectionGradient"
 							gradient.Color = ColorSequence.new({
-								ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 165, 0)),
-								ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 0))
+								ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+								ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
 							})
 							gradient.Rotation = 90
 							gradient.Parent = selectedButton
@@ -2212,15 +2178,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Slider.Size = UDim2.new(1, -10, 0, Slider.Title.TextBounds.Y + 15)
 				table.insert(Library.ColorTable, Slider.Slider.Bar)
 
-				local GlowFrame = Instance.new("Frame")
-				GlowFrame.Name = "GlowEffect"
-				GlowFrame.Size = UDim2.new(1, 6, 1, 6)
-				GlowFrame.Position = UDim2.new(0, -3, 0, -3)
-				GlowFrame.BackgroundColor3 = Config.Color or Color3.fromRGB(0, 162, 255)
-				GlowFrame.BackgroundTransparency = 1
-				GlowFrame.BorderSizePixel = 0
-				GlowFrame.ZIndex = Slider.Slider.Bar.ZIndex + 1
-				GlowFrame.Parent = Slider.Slider.Bar
+				Slider.Value.ClearTextOnFocus = false
+				Slider.Value.TextEditable = true
+				Slider.Value.ZIndex = 10
+
+				local GlowFrame = Slider.Slider.Bar.GlowEffect
 				table.insert(Library.ColorTable, GlowFrame)
 				if Slider.Slider.Bar:FindFirstChild("UICorner") then
 					local GlowCorner = Slider.Slider.Bar.UICorner:Clone()
@@ -2262,30 +2224,49 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if not Slider or not Slider.Parent then return end
 					GlobalSliderValue = Value
 					Slider.Slider.Bar.Size = UDim2.new(Value / Max, 0, 1, 0)
-					Slider.Value.PlaceholderText = Value
+					Slider.Value.PlaceholderText = tostring(Value)
 					Callback(Value)
 				end
 
 				table.insert(Library.Connections, Slider.Value.FocusLost:Connect(function()
 					if not Slider or not Slider.Parent then return end
-					if not tonumber(Slider.Value.Text) then
-						Slider.Value.Text = GlobalSliderValue
-					elseif Slider.Value.Text == "" or tonumber(Slider.Value.Text) <= Min then
-						Slider.Value.Text = Min
-					elseif Slider.Value.Text == "" or tonumber(Slider.Value.Text) >= Max then
-						Slider.Value.Text = Max
+					local inputText = Slider.Value.Text
+					local inputValue = tonumber(inputText)
+					if inputText == "" or not inputValue then
+						Slider.Value.Text = ""
+						return
 					end
-
-					GlobalSliderValue = Slider.Value.Text
-					Slider.Slider.Bar.Size = UDim2.new(Slider.Value.Text / Max, 0, 1, 0)
-					Slider.Value.PlaceholderText = Slider.Value.Text
-					Callback(tonumber(Slider.Value.Text))
+					inputValue = math.clamp(inputValue, Min, Max)
+					if Precise then
+						inputValue = math.floor(inputValue)
+					else
+						inputValue = tonumber(string.format("%.2f", inputValue))
+					end
+					GlobalSliderValue = inputValue
+					Slider.Slider.Bar.Size = UDim2.new(inputValue / Max, 0, 1, 0)
+					Slider.Value.PlaceholderText = tostring(inputValue)
+					Callback(inputValue)
 					Slider.Value.Text = ""
+				end))
+
+				local textboxClicked = false
+
+				table.insert(Library.Connections, Slider.Value.InputBegan:Connect(function(Input)
+					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+						textboxClicked = true
+						Slider.Value:CaptureFocus()
+					end
+				end))
+
+				table.insert(Library.Connections, Slider.Value.InputEnded:Connect(function(Input)
+					if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+						textboxClicked = false
+					end
 				end))
 
 				table.insert(Library.Connections, Slider.InputBegan:Connect(function(Input)
 					if not Slider or not Slider.Parent then return end
-					if UserInputService:GetFocusedTextBox() == nil then
+					if UserInputService:GetFocusedTextBox() == nil and not textboxClicked then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							Sliding(Input)
 							Dragging = true
@@ -2380,6 +2361,17 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 				Library.Connections = Library.Connections or {}
 
+				local SearchOption = Folder.SearchOption:Clone()
+				SearchOption.Name = "SearchBar"
+				SearchOption.Parent = Dropdown.Container.Holder.Container
+				SearchOption.PlaceholderText = "Search options..."
+				SearchOption.BackgroundColor3 = Dropdown.BackgroundColor3
+				SearchOption.BackgroundTransparency = 1
+				SearchOption.BorderSizePixel = 0
+				SearchOption.TextColor3 = Color3.fromRGB(200, 200, 200)
+				SearchOption.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+				SearchOption.Size = UDim2.new(1, 0, 0, SearchOption.TextBounds.Y + 5)
+
 				Dropdown.Title.Text = Name
 				Dropdown.Title.Size = UDim2.new(1, 0, 0, Dropdown.Title.TextBounds.Y + 5)
 				Dropdown.Container.Position = UDim2.new(0, 0, 0, Dropdown.Title.TextBounds.Y + 5)
@@ -2391,6 +2383,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local SelectedOptions = {}
 				local CurrentSelectedOption = nil
 				local isAnimating = false
+				local AllOptions = {}
 
 				local collapsedSize = Dropdown.Title.TextBounds.Y + 25
 				local expandedSize = 0
@@ -2402,6 +2395,74 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local function PreCalculateSizes()
 					holderExpandedSize = Dropdown.Container.Holder.Container.ListLayout.AbsoluteContentSize.Y
 					expandedSize = holderExpandedSize + collapsedSize + 5
+				end
+
+				local function HighlightText(textLabel, searchText, optionName)
+					if searchText == "" then
+						textLabel.Text = optionName
+						textLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+						return
+					end
+					local lowerOption = string.lower(optionName)
+					local lowerSearch = string.lower(searchText)
+					local startPos, endPos = string.find(lowerOption, lowerSearch, 1, true)
+					if startPos then
+						local beforeText = string.sub(optionName, 1, startPos - 1)
+						local highlightText = string.sub(optionName, startPos, endPos)
+						local afterText = string.sub(optionName, endPos + 1)
+						local r = math.floor(Config.Color.R * 255)
+						local g = math.floor(Config.Color.G * 255)
+						local b = math.floor(Config.Color.B * 255)
+						local hexColor = string.format("#%02x%02x%02x", r, g, b)
+						textLabel.RichText = true
+						textLabel.Text = beforeText .. '<font color="' .. hexColor .. '"><b>' .. highlightText .. '</b></font>' .. afterText
+					else
+						textLabel.RichText = false
+						textLabel.Text = optionName
+						textLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+					end
+				end
+
+				local function FilterOptions(searchText)
+					local visibleCount = 1
+					for _, option in pairs(AllOptions) do
+						if option and option.Parent then
+							local shouldShow = searchText == "" or string.find(string.lower(option.Name), string.lower(searchText), 1, true)
+							option.Visible = shouldShow
+							if shouldShow then
+								visibleCount = visibleCount + 1
+								HighlightText(option.Title, searchText, option.Name)
+							end
+						end
+					end
+					task.wait()
+					PreCalculateSizes()
+					if DropdownToggle then
+						TweenService:Create(Dropdown, springInfo, {
+							Size = UDim2.new(1, -10, 0, expandedSize)
+						}):Play()
+						TweenService:Create(Dropdown.Container.Holder, springInfo, {
+							Size = UDim2.new(1, -5, 0, holderExpandedSize)
+						}):Play()
+					end
+				end
+
+				table.insert(Library.Connections, SearchOption.Changed:Connect(function(property)
+					if property == "Text" then
+						FilterOptions(SearchOption.Text)
+					end
+				end))
+
+				local function ClearSearch()
+					SearchOption.Text = ""
+					for _, option in pairs(AllOptions) do
+						if option and option.Parent then
+							option.Title.RichText = false
+							option.Title.Text = option.Name
+							option.Title.TextColor3 = Color3.fromRGB(200, 200, 200)
+						end
+					end
+					FilterOptions("")
 				end
 
 				local function UpdateText()
@@ -2439,8 +2500,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function UpdateSingleSelection(selectedOption, immediate)
-					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-						if child:IsA("TextButton") then
+					for _, child in next, AllOptions do
+						if child and child.Parent then
 							local isSelected = child.Name == selectedOption
 							UpdateOptionVisual(child, isSelected, immediate)
 							if isSelected then
@@ -2452,8 +2513,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				local function SetOptionsVisibility(visible)
-					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-						if child:IsA("TextButton") then
+					SearchOption.TextTransparency = visible and 0 or 1
+					SearchOption.BackgroundTransparency = 1
+					for _, child in next, AllOptions do
+						if child and child.Parent then
 							child.Title.TextTransparency = visible and 0 or 1
 							if Multi then
 								child.BackgroundTransparency = visible and (SelectedOptions[child.Name] and 0.7 or 1) or 1
@@ -2469,40 +2532,33 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if isAnimating then return end
 					isAnimating = true
 					DropdownToggle = not DropdownToggle
-
 					if DropdownToggle then
 						PreCalculateSizes()
 						Dropdown.Container.Holder.Visible = true
 						Dropdown.Container.Holder.ClipsDescendants = true
 						SetOptionsVisibility(true)
-
 						local dropdownTween = TweenService:Create(Dropdown, springInfo, {
 							Size = UDim2.new(1, -10, 0, expandedSize),
 							BackgroundTransparency = 0.95
 						})
-
 						local holderTween = TweenService:Create(Dropdown.Container.Holder, springInfo, {
 							Size = UDim2.new(1, -5, 0, holderExpandedSize)
 						})
-
 						dropdownTween:Play()
 						holderTween:Play()
 					else
 						SetOptionsVisibility(false)
-
+						ClearSearch()
 						local dropdownTween = TweenService:Create(Dropdown, springInfo, {
 							Size = UDim2.new(1, -10, 0, collapsedSize),
 							BackgroundTransparency = 1
 						})
-
 						local holderTween = TweenService:Create(Dropdown.Container.Holder, springInfo, {
 							Size = UDim2.new(1, -5, 0, 0)
 						})
-
 						dropdownTween:Play()
 						holderTween:Play()
 					end
-
 					local connection; connection = RunService.Heartbeat:Connect(function()
 						if (not DropdownToggle and math.abs(Dropdown.Size.Y.Offset - collapsedSize) < 1) or
 							(DropdownToggle and math.abs(Dropdown.Size.Y.Offset - expandedSize) < 1) then
@@ -2533,39 +2589,32 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if Multi then
 						table.insert(Library.Connections, Option.MouseButton1Up:Connect(function()
 							if not Option or not Option.Parent then return end
-							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
-								{Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
-							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
-								{Size = originalSize})
-
+							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
+							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = originalSize})
 							clickTween1:Play()
 							clickTween1.Completed:Wait()
 							clickTween2:Play()
-
 							SelectedOptions[OptionName] = not SelectedOptions[OptionName]
 							UpdateOptionVisual(Option, SelectedOptions[OptionName])
 							UpdateText()
-
 							local selectedArray = {}
 							for k, v in next, SelectedOptions do
 								if v then table.insert(selectedArray, k) end
 							end
-
 							local returnValue = Callback(selectedArray)
 							if type(returnValue) == "table" then
 								SelectedOptions = {}
 								for _, v in next, returnValue do
 									SelectedOptions[v] = true
 								end
-								for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-									if child:IsA("TextButton") then
+								for _, child in next, AllOptions do
+									if child and child.Parent then
 										UpdateOptionVisual(child, SelectedOptions[child.Name])
 									end
 								end
 								UpdateText()
 							end
 						end))
-
 						table.insert(Library.Connections, Option.MouseEnter:Connect(function()
 							if not Option or not Option.Parent then return end
 							if not SelectedOptions[OptionName] then
@@ -2575,7 +2624,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								}):Play()
 							end
 						end))
-
 						table.insert(Library.Connections, Option.MouseLeave:Connect(function()
 							if not Option or not Option.Parent then return end
 							TweenService:Create(Option, hoverInfo, {
@@ -2586,19 +2634,14 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					else
 						table.insert(Library.Connections, Option.MouseButton1Click:Connect(function()
 							if not Option or not Option.Parent then return end
-							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
-								{Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
-							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), 
-								{Size = originalSize})
-
+							local clickTween1 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 2, originalSize.Y.Scale, originalSize.Y.Offset)})
+							local clickTween2 = TweenService:Create(Option, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = originalSize})
 							clickTween1:Play()
 							clickTween1.Completed:Wait()
 							clickTween2:Play()
-
 							UpdateSingleSelection(OptionName)
 							Callback(OptionName)
 						end))
-
 						table.insert(Library.Connections, Option.MouseEnter:Connect(function()
 							if not Option or not Option.Parent then return end
 							if CurrentSelectedOption ~= OptionName then
@@ -2608,7 +2651,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								}):Play()
 							end
 						end))
-
 						table.insert(Library.Connections, Option.MouseLeave:Connect(function()
 							if not Option or not Option.Parent then return end
 							TweenService:Create(Option, hoverInfo, {
@@ -2618,7 +2660,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						end))
 					end
 				end
-
 				for _, OptionName in next, OptionTable do
 					local Option = Folder.Option:Clone()
 					Option.Name = OptionName
@@ -2627,6 +2668,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					Option.BackgroundColor3 = Config.Color
 					Option.Size = UDim2.new(1, 0, 0, Option.Title.TextBounds.Y + 5)
 					table.insert(Library.ColorTable, Option)
+					table.insert(AllOptions, Option)
 
 					local originalSize = Option.Size
 
@@ -2670,6 +2712,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end)
 
+				function DropdownInit:UpdateColors()
+					if SearchOption and SearchOption.Text ~= "" then
+						FilterOptions(SearchOption.Text)
+					end
+				end
+
 				function DropdownInit:GetOption()
 					if Multi then
 						local selected = {}
@@ -2690,8 +2738,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 								SelectedOptions[v] = true
 							end
 						end
-						for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-							if child:IsA("TextButton") then
+						for _, child in next, AllOptions do
+							if child and child.Parent then
 								UpdateOptionVisual(child, SelectedOptions[child.Name])
 							end
 						end
@@ -2723,11 +2771,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function DropdownInit:ClearOptions()
-					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-						if child:IsA("TextButton") then
+					for _, child in next, AllOptions do
+						if child and child.Parent then
 							child:Destroy()
 						end
 					end
+					AllOptions = {}
 					if Multi then
 						SelectedOptions = {}
 						Dropdown.Container.Value.Text = "None"
@@ -2745,8 +2794,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						return
 					end
 					local str = tostring(OptionName)
-					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-						if child:IsA("TextButton") and child.Name == str then
+					for _, child in next, AllOptions do
+						if child and child.Parent and child.Name == str then
 							return
 						end
 					end
@@ -2757,8 +2806,8 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					Option.BackgroundColor3 = Config.Color
 					Option.Size = UDim2.new(1, 0, 0, Option.Title.TextBounds.Y + 5)
 					table.insert(Library.ColorTable, Option)
+					table.insert(AllOptions, Option)
 					local originalSize = Option.Size
-
 					if Multi then
 						SelectedOptions[str] = false
 						if SelectImmediately then
@@ -2770,24 +2819,25 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							UpdateSingleSelection(str, true)
 						end
 					end
-
 					AddOptionConnections(Option, str, originalSize)
-
 					if Multi then
 						UpdateText()
 					end
 					PreCalculateSizes()
+					if SearchOption.Text ~= "" then
+						FilterOptions(SearchOption.Text)
+					end
 				end
 
 				function DropdownInit:RemoveOption(OptionName: string)
 					local str = tostring(OptionName)
-					for _, child in next, Dropdown.Container.Holder.Container:GetChildren() do
-						if child:IsA("TextButton") and child.Name == str then
+					for i, child in next, AllOptions do
+						if child and child.Parent and child.Name == str then
 							child:Destroy()
+							table.remove(AllOptions, i)
 							break
 						end
 					end
-
 					if Multi then
 						SelectedOptions[str] = nil
 						UpdateText()
@@ -2797,7 +2847,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							Dropdown.Container.Value.Text = ""
 						end
 					end
-
 					PreCalculateSizes()
 				end
 
