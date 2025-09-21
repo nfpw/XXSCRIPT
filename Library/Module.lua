@@ -934,6 +934,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		TabButton.BackgroundColor3 = Config.Color
 
 		local Underline = TabButton.Underline
+		Underline.BackgroundColor3 = Config.Color
 		table.insert(Library.ColorTable, Underline)
 		table.insert(Library.ColorTable, TabButton)
 		
