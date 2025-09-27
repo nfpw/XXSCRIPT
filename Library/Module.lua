@@ -437,7 +437,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		else 
 			for _, Pallete in next, Screen:GetChildren() do 
-				if Pallete:IsA("Frame") and Pallete.Name ~= "Main" and Pallete.Name ~= "Hud" then 
+				if Pallete:IsA("Frame") and Pallete.Name ~= "Main" and Pallete.Name ~= "Hud" and Pallete.Name ~= "KeybindViewer" then 
 					Pallete.Visible = false 
 				end 
 			end 
@@ -937,7 +937,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		Underline.BackgroundColor3 = Config.Color
 		table.insert(Library.ColorTable, Underline)
 		table.insert(Library.ColorTable, TabButton)
-		
+
 		Library.TabCount = Library.TabCount + 1
 		if Library.TabCount == 1 then
 			Library.FirstTab = Name
@@ -3830,6 +3830,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 		table.insert(Library.ColorTable, Hud.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.GradientFrame)
 
+		-- Make Hud draggable by default
+		makedraggable(Hud, Hud)
+
 		local function updateSize()
 			local text = InfoText.Text
 			if text and text ~= "" then
@@ -3887,6 +3890,22 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			Hud.Position = UDim2.new(1, -padding.right, 0, padding.top)
 			updateSize()
 			return self
+		end
+
+		function HudInit:SetDraggable(draggable)
+			if draggable and makedraggable then
+				makedraggable(Hud, Hud)
+			end
+			return self
+		end
+
+		function HudInit:SetPosition(position)
+			Hud.Position = position
+			return self
+		end
+
+		function HudInit:GetPosition()
+			return Hud.Position
 		end
 
 		updateSize()
@@ -3981,6 +4000,687 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		end
 	end
 	
+	-- skidded CreateKeybindViewer and CreateToggleList
+	function Library:CreateKeybindViewer(Config)
+		local KeybindViewerInit = {}
+		Config = Config or {}
+		if IsMobile then
+			local dummy = {}
+			function dummy:SetVisible() end
+			function dummy:IsVisible() return false end
+			function dummy:Toggle() return false end
+			function dummy:SetPosition() end
+			function dummy:GetPosition() return UDim2.new() end
+			function dummy:SetSize() end
+			function dummy:UpdateConfig() end
+			function dummy:Destroy() end
+			function dummy:SetParent() end
+			function dummy:ForceUpdate() end
+			function dummy:SetTitle() end
+			function dummy:GetKeybindCount() return 0 end
+			return dummy
+		end
+		local ViewerConfig = {
+			Visible = Config.Visible ~= false,
+			Position = Config.Position or UDim2.new(0, 10, 0, 100),
+			UpdateInterval = Config.UpdateInterval or 0,
+			ShowToggleStates = Config.ShowToggleStates ~= false,
+			ShowOnlyActive = Config.ShowOnlyActive ~= false,
+			Draggable = Config.Draggable ~= false,
+		}
+
+		local KeybindViewer = Folder.KeybindViewer:Clone()
+		KeybindViewer.Name = "KeybindViewer"
+		KeybindViewer.Position = ViewerConfig.Position
+		KeybindViewer.Visible = ViewerConfig.Visible
+
+		local TitleBar = KeybindViewer.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame
+		local TitleText = TitleBar.Title
+		local Container = TitleBar.Container
+
+		local ListLayout = Container:FindFirstChild("ListLayout")
+
+		if ViewerConfig.Draggable and makedraggable then
+			makedraggable(TitleBar, KeybindViewer)
+		end
+
+		local KeybindEntries = {}
+		local LastUpdateTime = 0
+		local UpdateConnection = nil
+
+		local function CreateKeybindEntry(name, keybind, state, mode, elementType)
+			local Entry = Instance.new("Frame")
+			Entry.Name = "KeybindEntry_" .. name
+			Entry.Size = UDim2.new(1, 10, 0, 14)
+			Entry.BackgroundTransparency = 1
+			Entry.Parent = Container
+			Entry.ZIndex = TitleBar.ZIndex + 2
+
+			local displayText = "[" .. keybind .. "] "
+			if elementType == "Toggle" and mode == "Hold" then
+				displayText = displayText .. "[Hold] " .. name
+			elseif elementType == "Toggle" then
+				displayText = displayText .. "[Toggle] " .. name
+			elseif elementType == "Button" then
+				displayText = displayText .. "[Button] " .. name
+			else
+				displayText = displayText .. name
+			end
+
+			local KeybindLabel = Instance.new("TextLabel")
+			KeybindLabel.Name = "KeybindLabel"
+			KeybindLabel.Size = UDim2.new(1, -4, 1, 0)
+			KeybindLabel.Position = UDim2.new(0, 2, 0, 0)
+			KeybindLabel.BackgroundTransparency = 1
+			KeybindLabel.Text = displayText
+			local accentColor = Library.ColorTable and #Library.ColorTable > 0 and Library.ColorTable[1].BackgroundColor3 or Color3.fromRGB(0, 162, 255)
+			KeybindLabel.TextColor3 = state and accentColor or Color3.fromRGB(200, 200, 200)
+			KeybindLabel.TextScaled = true
+			KeybindLabel.TextSize = 11
+			KeybindLabel.Font = Enum.Font.SourceSans
+			KeybindLabel.TextXAlignment = Enum.TextXAlignment.Left
+			KeybindLabel.TextYAlignment = Enum.TextYAlignment.Center
+			KeybindLabel.TextTruncate = Enum.TextTruncate.AtEnd
+			KeybindLabel.Parent = Entry
+			KeybindLabel.ZIndex = Entry.ZIndex + 1
+
+			local TextSizeConstraint = Instance.new("UITextSizeConstraint")
+			TextSizeConstraint.MaxTextSize = 12
+			TextSizeConstraint.MinTextSize = 8
+			TextSizeConstraint.Parent = KeybindLabel
+
+			if state then
+				table.insert(Library.ColorTable, KeybindLabel)
+			end
+
+			return {
+				Entry = Entry,
+				KeybindLabel = KeybindLabel,
+				IsActive = state,
+				ElementType = elementType,
+				Mode = mode,
+				Keybind = keybind
+			}
+		end
+
+		local function UpdateKeybindEntry(entry, name, keybind, state, mode, elementType)
+			entry.IsActive = state
+			entry.ElementType = elementType
+			entry.Mode = mode
+			entry.Keybind = keybind
+
+			local displayText = "[" .. keybind .. "] "
+			if elementType == "Toggle" and mode == "Hold" then
+				displayText = displayText .. "[Hold] " .. name
+			elseif elementType == "Toggle" then
+				displayText = displayText .. "[Toggle] " .. name
+			elseif elementType == "Button" then
+				displayText = displayText .. "[Button] " .. name
+			else
+				displayText = displayText .. name
+			end
+
+			entry.KeybindLabel.Text = displayText
+
+			local accentColor = Library.ColorTable and #Library.ColorTable > 0 and Library.ColorTable[1].BackgroundColor3 or Color3.fromRGB(0, 162, 255)
+			entry.KeybindLabel.TextColor3 = state and accentColor or Color3.fromRGB(200, 200, 200)
+
+			local isInColorTable = false
+			for i, item in ipairs(Library.ColorTable) do
+				if item == entry.KeybindLabel then
+					isInColorTable = true
+					if not state then
+						table.remove(Library.ColorTable, i)
+					end
+					break
+				end
+			end
+
+			if state and not isInColorTable then
+				table.insert(Library.ColorTable, entry.KeybindLabel)
+			end
+		end
+
+		local function RefreshKeybindColors()
+			local accentColor = Library.ColorTable and #Library.ColorTable > 0 and Library.ColorTable[1].BackgroundColor3 or Color3.fromRGB(0, 162, 255)
+			for entryName, entry in pairs(KeybindEntries) do
+				if entry and entry.KeybindLabel then
+					entry.KeybindLabel.TextColor3 = entry.IsActive and accentColor or Color3.fromRGB(200, 200, 200)
+				end
+			end
+		end
+
+		local function UpdateKeybindEntries()
+			local currentKeybinds = {}
+			if shared.Anka and shared.Anka.Elements then
+				for uniqueID, element in pairs(shared.Anka.Elements) do
+					if element and element.GetKeybind then
+						local keybindObj = element:GetKeybind()
+						if keybindObj then
+							local bind = keybindObj:GetBind()
+							local bindString = tostring(bind):gsub("Enum.KeyCode.", "")
+							if bindString ~= "NONE" and bindString ~= "Unknown" then
+								local elementName = uniqueID:gsub(" %- %d+", "")
+								local state = false
+								local mode = "Toggle"
+								local elementType = element.Type or "Toggle"
+								if elementType == "Toggle" and element.GetState then
+									state = element:GetState()
+								elseif elementType == "Button" then
+									state = nil
+								end
+								if keybindObj.GetMode then
+									mode = keybindObj:GetMode()
+								elseif keybindObj.Mode then
+									mode = keybindObj.Mode
+								elseif keybindObj.mode then
+									mode = keybindObj.mode
+								end
+								if not ViewerConfig.ShowOnlyActive or state or mode == "Hold" or elementType == "Button" then
+									currentKeybinds[elementName] = {
+										name = elementName,
+										keybind = bindString,
+										state = state,
+										mode = mode,
+										elementType = elementType
+									}
+								end
+							end
+						end
+					end
+				end
+			end
+			for entryName, entry in pairs(KeybindEntries) do
+				if not currentKeybinds[entryName] then
+					for i = #Library.ColorTable, 1, -1 do
+						if Library.ColorTable[i] == entry.KeybindLabel then
+							table.remove(Library.ColorTable, i)
+							break
+						end
+					end
+					entry.Entry:Destroy()
+					KeybindEntries[entryName] = nil
+				end
+			end
+			for entryName, keybindData in pairs(currentKeybinds) do
+				if KeybindEntries[entryName] then
+					local existingEntry = KeybindEntries[entryName]
+					if existingEntry.IsActive ~= keybindData.state or 
+						existingEntry.ElementType ~= keybindData.elementType or 
+						existingEntry.Mode ~= keybindData.mode or 
+						existingEntry.Keybind ~= keybindData.keybind then
+						UpdateKeybindEntry(
+							existingEntry,
+							keybindData.name,
+							keybindData.keybind,
+							keybindData.state,
+							keybindData.mode,
+							keybindData.elementType
+						)
+					end
+				else
+					local newEntry = CreateKeybindEntry(
+						keybindData.name,
+						keybindData.keybind,
+						keybindData.state,
+						keybindData.mode,
+						keybindData.elementType
+					)
+					KeybindEntries[entryName] = newEntry
+				end
+			end
+			local sortedNames = {}
+			for name in pairs(KeybindEntries) do
+				table.insert(sortedNames, name)
+			end
+			table.sort(sortedNames)
+			for i, name in ipairs(sortedNames) do
+				if KeybindEntries[name] and KeybindEntries[name].Entry then
+					KeybindEntries[name].Entry.LayoutOrder = i
+				end
+			end
+			task.wait()
+			local contentHeight = math.max(ListLayout.AbsoluteContentSize.Y + 10, 10)
+			local maxHeight = 200
+			local targetHeight = math.min(contentHeight, maxHeight)
+			local entryCount = 0
+			for _ in pairs(KeybindEntries) do
+				entryCount = entryCount + 1
+			end
+			if entryCount == 0 then
+				targetHeight = 10
+			end
+			if Container.ClassName == "ScrollingFrame" then
+				Container.Size = UDim2.new(1, -10, 0, targetHeight)
+				Container.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+			else
+				Container.Size = UDim2.new(1, -10, 0, targetHeight)
+			end
+			local totalHeight = targetHeight + 25
+			KeybindViewer.Size = UDim2.new(0, 200, 0, totalHeight)
+		end
+
+		local function StartUpdating()
+			if UpdateConnection then
+				UpdateConnection:Disconnect()
+			end
+			UpdateConnection = RunService.PreRender:Connect(function()
+				local currentTime = tick()
+				if currentTime - LastUpdateTime >= ViewerConfig.UpdateInterval then
+					LastUpdateTime = currentTime
+					if KeybindViewer.Visible then
+						UpdateKeybindEntries()
+						RefreshKeybindColors()
+					end
+				end
+			end)
+			table.insert(Library.Connections, UpdateConnection)
+		end
+
+		local function StopUpdating()
+			if UpdateConnection then
+				UpdateConnection:Disconnect()
+				for i = #Library.Connections, 1, -1 do
+					if Library.Connections[i] == UpdateConnection then
+						table.remove(Library.Connections, i)
+						break
+					end
+				end
+				UpdateConnection = nil
+			end
+		end
+
+		function KeybindViewerInit:SetVisible(visible)
+			KeybindViewer.Visible = visible
+			if visible then
+				RefreshKeybindColors()
+				UpdateKeybindEntries()
+			end
+		end
+
+		function KeybindViewerInit:IsVisible()
+			return KeybindViewer.Visible
+		end
+
+		function KeybindViewerInit:Toggle()
+			self:SetVisible(not KeybindViewer.Visible)
+			return KeybindViewer.Visible
+		end
+
+		function KeybindViewerInit:SetPosition(position)
+			KeybindViewer.Position = position
+		end
+
+		function KeybindViewerInit:GetPosition()
+			return KeybindViewer.Position
+		end
+
+		function KeybindViewerInit:SetSize(size)
+			KeybindViewer.Size = size
+		end
+
+		function KeybindViewerInit:UpdateConfig(newConfig)
+			for key, value in pairs(newConfig) do
+				ViewerConfig[key] = value
+			end
+			RefreshKeybindColors()
+			UpdateKeybindEntries()
+		end
+
+		function KeybindViewerInit:SetParent(parent)
+			KeybindViewer.Parent = parent
+		end
+
+		function KeybindViewerInit:ForceUpdate()
+			RefreshKeybindColors()
+			UpdateKeybindEntries()
+		end
+
+		function KeybindViewerInit:SetTitle(title)
+			TitleText.Text = title
+		end
+
+		function KeybindViewerInit:GetKeybindCount()
+			local count = 0
+			for _ in pairs(KeybindEntries) do
+				count = count + 1
+			end
+			return count
+		end
+
+		KeybindViewer.Parent = Screen
+
+		table.insert(Library.ColorTable, KeybindViewer.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.GradientFrame)
+
+		StartUpdating()
+		task.wait(.1) -- some times i dream of saving the world
+		UpdateKeybindEntries()
+
+		return KeybindViewerInit
+	end
+
+	function Library:CreateToggleList(Config)
+		local ToggleListInit = {}
+		Config = Config or {}
+
+		if IsMobile then
+			local dummy = {}
+			function dummy:SetVisible() end
+			function dummy:IsVisible() return false end
+			function dummy:Toggle() return false end
+			function dummy:SetPosition() end
+			function dummy:GetPosition() return UDim2.new() end
+			function dummy:SetSize() end
+			function dummy:UpdateConfig() end
+			function dummy:Destroy() end
+			function dummy:SetParent() end
+			function dummy:ForceUpdate() end
+			function dummy:SetTitle() end
+			function dummy:GetEnabledCount() return 0 end
+			return dummy
+		end
+
+		local ViewerConfig = {
+			Visible = Config.Visible ~= false,
+			Position = Config.Position or UDim2.new(0, 220, 0, 100),
+			UpdateInterval = Config.UpdateInterval or 0,
+			ShowOnlyEnabled = Config.ShowOnlyEnabled ~= false,
+			ShowStatus = Config.ShowStatus ~= false,
+			Draggable = Config.Draggable ~= false,
+			Title = Config.Title or "Enabled Toggles"
+		}
+
+		local ToggleList = Folder.KeybindViewer:Clone()
+		ToggleList.Name = "ToggleList"
+		ToggleList.Position = ViewerConfig.Position
+		ToggleList.Visible = ViewerConfig.Visible
+
+		local TitleBar = ToggleList.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame
+		local TitleText = TitleBar.Title
+		local Container = TitleBar.Container
+
+		TitleText.Text = ViewerConfig.Title
+
+		local ListLayout = Container:FindFirstChild("ListLayout")
+
+		if ViewerConfig.Draggable and makedraggable then
+			makedraggable(TitleBar, ToggleList)
+		end
+
+		local ToggleEntries = {}
+		local LastUpdateTime = 0
+		local UpdateConnection = nil
+
+		local function CreateToggleEntry(name, state, status)
+			local Entry = Instance.new("Frame")
+			Entry.Name = "ToggleEntry_" .. name
+			Entry.Size = UDim2.new(1, -10, 0, 14)
+			Entry.BackgroundTransparency = 1
+			Entry.Parent = Container
+			Entry.ZIndex = TitleBar.ZIndex + 2
+			local displayText = name
+			local ToggleLabel = Instance.new("TextLabel")
+			ToggleLabel.Name = "ToggleLabel"
+			ToggleLabel.Size = UDim2.new(1, -4, 1, 0)
+			ToggleLabel.Position = UDim2.new(0, 2, 0, 0)
+			ToggleLabel.BackgroundTransparency = 1
+			ToggleLabel.Text = displayText
+			local textColor = Color3.fromRGB(200, 200, 200)
+			if status == "dangerous" then
+				textColor = Color3.fromRGB(255, 85, 85)
+			elseif status == "buggy" then
+				textColor = Color3.fromRGB(255, 200, 0)
+			else
+				local accentColor = Config.Color or (Library.ColorTable and #Library.ColorTable > 0 and Library.ColorTable[1].BackgroundColor3) or Color3.fromRGB(0, 162, 255)
+				textColor = state and accentColor or Color3.fromRGB(200, 200, 200)
+			end
+			ToggleLabel.TextColor3 = textColor
+			ToggleLabel.TextScaled = true
+			ToggleLabel.TextSize = 11
+			ToggleLabel.Font = Enum.Font.SourceSans
+			ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+			ToggleLabel.TextYAlignment = Enum.TextYAlignment.Center
+			ToggleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+			ToggleLabel.Parent = Entry
+			ToggleLabel.ZIndex = Entry.ZIndex + 1
+			local TextSizeConstraint = Instance.new("UITextSizeConstraint")
+			TextSizeConstraint.MaxTextSize = 12
+			TextSizeConstraint.MinTextSize = 8
+			TextSizeConstraint.Parent = ToggleLabel
+			if state and status == "normal" then
+				table.insert(Library.ColorTable, ToggleLabel)
+			end
+			return {
+				Entry = Entry,
+				ToggleLabel = ToggleLabel,
+				IsEnabled = state,
+				Status = status,
+				Name = name
+			}
+		end
+
+		local function UpdateToggleEntry(entry, name, state, status)
+			entry.IsEnabled = state
+			entry.Status = status
+			entry.Name = name
+			entry.ToggleLabel.Text = name
+			local textColor = Color3.fromRGB(200, 200, 200)
+			if status == "dangerous" then
+				textColor = Color3.fromRGB(255, 85, 85)
+			elseif status == "buggy" then
+				textColor = Color3.fromRGB(255, 200, 0)
+			else
+				local accentColor = Config.Color or (Library.ColorTable and #Library.ColorTable > 0 and Library.ColorTable[1].BackgroundColor3) or Color3.fromRGB(0, 162, 255)
+				textColor = state and accentColor or Color3.fromRGB(200, 200, 200)
+			end
+			entry.ToggleLabel.TextColor3 = textColor
+			local isInColorTable = false
+			for i, item in ipairs(Library.ColorTable) do
+				if item == entry.ToggleLabel then
+					isInColorTable = true
+					if not state or status ~= "normal" then
+						table.remove(Library.ColorTable, i)
+					end
+					break
+				end
+			end
+			if state and status == "normal" and not isInColorTable then
+				table.insert(Library.ColorTable, entry.ToggleLabel)
+			end
+		end
+
+		local function RefreshToggleColors()
+			for entryName, entry in pairs(ToggleEntries) do
+				if entry and entry.ToggleLabel then
+					local textColor = Color3.fromRGB(200, 200, 200)
+					if entry.Status == "dangerous" then
+						textColor = Color3.fromRGB(255, 85, 85)
+					elseif entry.Status == "buggy" then
+						textColor = Color3.fromRGB(255, 200, 0)
+					else
+						local accentColor = Config.Color or (Library.ColorTable and #Library.ColorTable > 0 and Library.ColorTable[1].BackgroundColor3) or Color3.fromRGB(0, 162, 255)
+						textColor = entry.IsEnabled and accentColor or Color3.fromRGB(200, 200, 200)
+					end
+					entry.ToggleLabel.TextColor3 = textColor
+				end
+			end
+		end
+
+		local function UpdateToggleEntries()
+			local currentToggles = {}
+			if shared.Anka and shared.Anka.Elements then
+				for uniqueID, element in pairs(shared.Anka.Elements) do
+					if element and element.Type == "Toggle" and element.GetState then
+						local elementName = uniqueID:gsub(" %- %d+", "")
+						local state = element:GetState()
+
+						if state or not ViewerConfig.ShowOnlyEnabled then
+							local status = "normal"
+							if element.GetStatus then
+								status = element:GetStatus() or "normal"
+							end
+
+							currentToggles[elementName] = {
+								name = elementName,
+								state = state,
+								status = status
+							}
+						end
+					end
+				end
+			end
+			for entryName, entry in pairs(ToggleEntries) do
+				if not currentToggles[entryName] then
+					for i = #Library.ColorTable, 1, -1 do
+						if Library.ColorTable[i] == entry.ToggleLabel then
+							table.remove(Library.ColorTable, i)
+							break
+						end
+					end
+					entry.Entry:Destroy()
+					ToggleEntries[entryName] = nil
+				end
+			end
+			for entryName, toggleData in pairs(currentToggles) do
+				if ToggleEntries[entryName] then
+					local existingEntry = ToggleEntries[entryName]
+					if existingEntry.IsEnabled ~= toggleData.state or existingEntry.Status ~= toggleData.status then
+						UpdateToggleEntry(
+							existingEntry,
+							toggleData.name,
+							toggleData.state,
+							toggleData.status
+						)
+					end
+				else
+					local newEntry = CreateToggleEntry(
+						toggleData.name,
+						toggleData.state,
+						toggleData.status
+					)
+					ToggleEntries[entryName] = newEntry
+				end
+			end
+			local sortedNames = {}
+			for name in pairs(ToggleEntries) do
+				table.insert(sortedNames, name)
+			end
+			table.sort(sortedNames)
+			for i, name in ipairs(sortedNames) do
+				if ToggleEntries[name] and ToggleEntries[name].Entry then
+					ToggleEntries[name].Entry.LayoutOrder = i
+				end
+			end
+			task.wait()
+			local contentHeight = math.max(ListLayout.AbsoluteContentSize.Y + 10, 10)
+			local maxHeight = 200
+			local targetHeight = math.min(contentHeight, maxHeight)
+			local entryCount = 0
+			for _ in pairs(ToggleEntries) do
+				entryCount = entryCount + 1
+			end
+			if entryCount == 0 then
+				targetHeight = 10
+			end
+			if Container.ClassName == "ScrollingFrame" then
+				Container.Size = UDim2.new(1, -10, 0, targetHeight)
+				Container.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+			else
+				Container.Size = UDim2.new(1, -10, 0, targetHeight)
+			end
+			local totalHeight = targetHeight + 25
+			ToggleList.Size = UDim2.new(0, 200, 0, totalHeight)
+		end
+
+		local function StartUpdating()
+			if UpdateConnection then
+				UpdateConnection:Disconnect()
+			end
+			UpdateConnection = RunService.PreRender:Connect(function()
+				local currentTime = tick()
+				if currentTime - LastUpdateTime >= ViewerConfig.UpdateInterval then
+					LastUpdateTime = currentTime
+					if ToggleList.Visible then
+						UpdateToggleEntries()
+						RefreshToggleColors()
+					end
+				end
+			end)
+			table.insert(Library.Connections, UpdateConnection)
+		end
+
+		function ToggleListInit:SetVisible(visible)
+			ToggleList.Visible = visible
+			if visible then
+				RefreshToggleColors()
+				UpdateToggleEntries()
+			end
+		end
+
+		function ToggleListInit:IsVisible()
+			return ToggleList.Visible
+		end
+
+		function ToggleListInit:Toggle()
+			self:SetVisible(not ToggleList.Visible)
+			return ToggleList.Visible
+		end
+
+		function ToggleListInit:SetPosition(position)
+			ToggleList.Position = position
+		end
+
+		function ToggleListInit:GetPosition()
+			return ToggleList.Position
+		end
+
+		function ToggleListInit:ForceUpdate()
+			RefreshToggleColors()
+			UpdateToggleEntries()
+		end
+
+		function ToggleListInit:SetTitle(title)
+			TitleText.Text = title
+			ViewerConfig.Title = title
+		end
+
+		function ToggleListInit:GetEnabledCount()
+			local count = 0
+			if shared.Anka and shared.Anka.Elements then
+				for _, element in pairs(shared.Anka.Elements) do
+					if element and element.Type == "Toggle" and element.GetState and element:GetState() then
+						count = count + 1
+					end
+				end
+			end
+			return count
+		end
+
+		function ToggleListInit:Destroy()
+			if UpdateConnection then
+				UpdateConnection:Disconnect()
+			end
+			for _, entry in pairs(ToggleEntries) do
+				for i = #Library.ColorTable, 1, -1 do
+					if Library.ColorTable[i] == entry.ToggleLabel then
+						table.remove(Library.ColorTable, i)
+						break
+					end
+				end
+			end
+			ToggleList:Destroy()
+		end
+
+		ToggleList.Parent = Screen
+		table.insert(Library.ColorTable, ToggleList.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.GradientFrame)
+
+		StartUpdating()
+		task.wait(.1) -- some times i dream of saving the world
+		UpdateToggleEntries()
+
+		return ToggleListInit
+	end
+	
 	--pasted from a old source
 	function WindowInit:CreateGlow(enableGlow, glowConfig)
 		glowConfig = glowConfig or {}
@@ -4054,7 +4754,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		end
 	end
-	
+
 	function WindowInit:Destroy()
 		self:CreateGlow(false)
 		if self.particles then
