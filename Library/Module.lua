@@ -437,7 +437,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		else 
 			for _, Pallete in next, Screen:GetChildren() do 
-				if Pallete:IsA("Frame") and Pallete.Name ~= "Main" and Pallete.Name ~= "Hud" and Pallete.Name ~= "KeybindViewer" then 
+				if Pallete:IsA("Frame") and Pallete.Name ~= "Main" and Pallete.Name ~= "Hud" and Pallete.Name ~= "KeybindViewer" and Pallete.Name ~= "ToggleList" then 
 					Pallete.Visible = false 
 				end 
 			end 
