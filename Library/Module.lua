@@ -2354,7 +2354,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				return SliderInit
 			end
 
-			function SectionInit:CreateDropdown(Name: string, OptionTable: {string}, Callback: (Value: any) -> (), InitialValue: any?, Multi: boolean?, WrapText: boolean?): Element
+			function SectionInit:CreateDropdown(Name: string, OptionTable: {string}, Callback: (Value: any) -> (), InitialValue: any?, Multi: boolean?, WrapText: boolean?, KeepRemoved: boolean?): Element
 				local DropdownInit: Element = {}
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
@@ -2530,6 +2530,18 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 				end
 
+				local function UpdateDropdownSize()
+					if DropdownToggle then
+						PreCalculateSizes()
+						TweenService:Create(Dropdown, springInfo, {
+							Size = UDim2.new(1, -10, 0, expandedSize)
+						}):Play()
+						TweenService:Create(Dropdown.Container.Holder, springInfo, {
+							Size = UDim2.new(1, -5, 0, holderExpandedSize)
+						}):Play()
+					end
+				end
+
 				table.insert(Library.Connections, Dropdown.MouseButton1Click:Connect(function()
 					if not Dropdown or not Dropdown.Parent then return end
 					if isAnimating then return end
@@ -2663,6 +2675,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						end))
 					end
 				end
+
 				for _, OptionName in next, OptionTable do
 					local Option = Folder.Option:Clone()
 					Option.Name = OptionName
@@ -2780,13 +2793,18 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						end
 					end
 					AllOptions = {}
-					if Multi then
-						SelectedOptions = {}
-						Dropdown.Container.Value.Text = "None"
+					if not KeepRemoved then
+						if Multi then
+							SelectedOptions = {}
+							Dropdown.Container.Value.Text = "None"
+						else
+							CurrentSelectedOption = nil
+							Dropdown.Container.Value.Text = ""
+						end
 					else
-						CurrentSelectedOption = nil
-						Dropdown.Container.Value.Text = ""
+						UpdateText()
 					end
+					UpdateDropdownSize()
 				end
 
 				function DropdownInit:AddOption(OptionName: string | {any}, SelectImmediately: boolean?)
@@ -2794,6 +2812,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						for _, option in next, OptionName do
 							self:AddOption(tostring(option), SelectImmediately)
 						end
+						UpdateDropdownSize()
 						return
 					end
 					local str = tostring(OptionName)
@@ -2812,7 +2831,9 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					table.insert(AllOptions, Option)
 					local originalSize = Option.Size
 					if Multi then
-						SelectedOptions[str] = false
+						if SelectedOptions[str] == nil then
+							SelectedOptions[str] = false
+						end
 						if SelectImmediately then
 							SelectedOptions[str] = true
 						end
@@ -2820,13 +2841,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					else
 						if SelectImmediately then
 							UpdateSingleSelection(str, true)
+						elseif CurrentSelectedOption == str then
+							UpdateOptionVisual(Option, true, true)
 						end
 					end
 					AddOptionConnections(Option, str, originalSize)
 					if Multi then
 						UpdateText()
 					end
-					PreCalculateSizes()
+					UpdateDropdownSize()
 					if SearchOption.Text ~= "" then
 						FilterOptions(SearchOption.Text)
 					end
@@ -2841,16 +2864,20 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							break
 						end
 					end
-					if Multi then
-						SelectedOptions[str] = nil
-						UpdateText()
-					else
-						if CurrentSelectedOption == str then
-							CurrentSelectedOption = nil
-							Dropdown.Container.Value.Text = ""
+					if not KeepRemoved then
+						if Multi then
+							SelectedOptions[str] = nil
+							UpdateText()
+						else
+							if CurrentSelectedOption == str then
+								CurrentSelectedOption = nil
+								Dropdown.Container.Value.Text = ""
+							end
 						end
+					else
+						UpdateText()
 					end
-					PreCalculateSizes()
+					UpdateDropdownSize()
 				end
 
 				function DropdownInit:ChangeOptions(NewOptionTable: {string}, NewInitialValue: any?)
@@ -3999,7 +4026,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 		end
 	end
-	
+
 	-- skidded CreateKeybindViewer and CreateToggleList
 	function Library:CreateKeybindViewer(Config)
 		local KeybindViewerInit = {}
@@ -4349,7 +4376,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		end
 
 		KeybindViewer.Parent = Screen
-
 		table.insert(Library.ColorTable, KeybindViewer.BorderFrame1.BorderFrame2.BorderFrame3.InnerFrame.GradientFrame)
 
 		StartUpdating()
@@ -4680,7 +4706,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 		return ToggleListInit
 	end
-	
+
 	--pasted from a old source
 	function WindowInit:CreateGlow(enableGlow, glowConfig)
 		glowConfig = glowConfig or {}
