@@ -1327,8 +1327,12 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end
 
 					function KeybindInit:GetBind()
-						local success, enum = pcall(function() return Enum.KeyCode[Selected] end)
-						return success and enum or Enum.KeyCode.Unknown
+						if IsMouseButton(Selected) then
+							return Selected
+						else
+							local success, enum = pcall(function() return Enum.KeyCode[Selected] end)
+							return success and enum or Enum.KeyCode.Unknown
+						end
 					end
 
 					KeybindObject = KeybindInit
@@ -1952,11 +1956,29 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					local WaitingForBind = false
 					local Selected = Bind
 					local Blacklist = {}
+					local firstClickReceived = false
+					local pendingBind = nil
+					local lastClickTime = 0
 
 					Toggle.Keybind.Visible = true
 					Toggle.Keybind.Text = "[ " .. Bind .. " ]"
 
 					UpdateTitleSize()
+
+					local function GetInputName(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
+							return "LeftClick"
+						elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+							return "RightClick"
+						elseif input.UserInputType == Enum.UserInputType.Keyboard then
+							return tostring(input.KeyCode):gsub("Enum.KeyCode.", "")
+						end
+						return nil
+					end
+
+					local function IsMouseButton(bindName)
+						return bindName == "LeftClick" or bindName == "RightClick"
+					end
 
 					local ModePopup = Toggle:FindFirstChild("ModePopup")
 					local innerFrame = ModePopup and ModePopup.BorderFrame1.BorderFrame2.BorderFrame3:FindFirstChild("InnerFrame")
@@ -2029,8 +2051,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 					table.insert(Library.Connections, Toggle.Keybind.InputBegan:Connect(function(Input)
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+							lastClickTime = tick()
 							Toggle.Keybind.Text = "[ ... ]"
 							WaitingForBind = true
+							firstClickReceived = false
+							pendingBind = nil
 
 							local keybindFlash = TweenService:Create(Toggle.Keybind, 
 								TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
@@ -2056,33 +2081,55 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 					table.insert(Library.Connections, UserInputService.InputBegan:Connect(function(Input)
 						if UserInputService:GetFocusedTextBox() == nil then
-							if WaitingForBind and Input.UserInputType == Enum.UserInputType.Keyboard then
-								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
-								if not table.find(Blacklist, Key) then
-									Toggle.Keybind.Text = "[ " .. Key .. " ]"
-									Selected = Key
-									if KeybindCallback then
-										KeybindCallback(Key)
+							local inputName = GetInputName(Input)
+
+							if WaitingForBind and inputName then
+								local currentTime = tick()
+								if IsMouseButton(inputName) and (currentTime - lastClickTime) < 0.2 then
+									return
+								end
+
+								if not firstClickReceived then
+									if not table.find(Blacklist, inputName) then
+										firstClickReceived = true
+										pendingBind = inputName
+										Toggle.Keybind.Text = "[ Press again... ]"
+									else
+										Toggle.Keybind.Text = "[ NONE ]"
+										Selected = "NONE"
+										WaitingForBind = false
+										firstClickReceived = false
+										pendingBind = nil
 									end
 								else
-									Toggle.Keybind.Text = "[ NONE ]"
-									Selected = "NONE"
+									if inputName == pendingBind then
+										Toggle.Keybind.Text = "[ " .. inputName .. " ]"
+										Selected = inputName
+										if KeybindCallback then
+											KeybindCallback(inputName)
+										end
+										WaitingForBind = false
+										firstClickReceived = false
+										pendingBind = nil
+									else
+										Toggle.Keybind.Text = "[ NONE ]"
+										Selected = "NONE"
+										WaitingForBind = false
+										firstClickReceived = false
+										pendingBind = nil
+									end
 								end
-								WaitingForBind = false
-							elseif Input.UserInputType == Enum.UserInputType.Keyboard then
-								local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
-								if Key == Selected and Selected ~= "NONE" then
-									if KeybindMode == "Toggle" then
-										ToggleState = not ToggleState
-										SetState(ToggleState)
-										if KeybindCallback then
-											KeybindCallback(Key)
-										end
-									elseif KeybindMode == "Hold" then
-										SetState(true)
-										if KeybindCallback then
-											KeybindCallback(Key)
-										end
+							elseif inputName and inputName == Selected and Selected ~= "NONE" then
+								if KeybindMode == "Toggle" then
+									ToggleState = not ToggleState
+									SetState(ToggleState)
+									if KeybindCallback then
+										KeybindCallback(inputName)
+									end
+								elseif KeybindMode == "Hold" then
+									SetState(true)
+									if KeybindCallback then
+										KeybindCallback(inputName)
 									end
 								end
 							end
@@ -2090,23 +2137,34 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					end))
 
 					table.insert(Library.Connections, UserInputService.InputEnded:Connect(function(Input)
-						if KeybindMode == "Hold" and Input.UserInputType == Enum.UserInputType.Keyboard then
-							local Key = tostring(Input.KeyCode):gsub("Enum.KeyCode.", "")
-							if Key == Selected and Selected ~= "NONE" then
+						if KeybindMode == "Hold" then
+							local inputName = GetInputName(Input)
+							if inputName == Selected and Selected ~= "NONE" then
 								SetState(false)
 							end
 						end
 					end))
 
 					function KeybindInit:SetBind(Key)
-						local keyString = (typeof(Key) == "EnumItem" and tostring(Key):gsub("Enum.KeyCode.", "")) or Key
+						local keyString
+						if typeof(Key) == "EnumItem" then
+							keyString = tostring(Key):gsub("Enum.KeyCode.", "")
+						elseif typeof(Key) == "string" then
+							keyString = Key
+						else
+							keyString = "NONE"
+						end
 						Toggle.Keybind.Text = "[ " .. keyString .. " ]"
 						Selected = keyString
 					end
 
 					function KeybindInit:GetBind()
-						local success, enum = pcall(function() return Enum.KeyCode[Selected] end)
-						return success and enum or Enum.KeyCode.Unknown
+						if IsMouseButton(Selected) then
+							return Selected
+						else
+							local success, enum = pcall(function() return Enum.KeyCode[Selected] end)
+							return success and enum or Enum.KeyCode.Unknown
+						end
 					end
 
 					function KeybindInit:SetMode(Mode)
