@@ -1320,6 +1320,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						end
 					end))
 
+					local function IsMouseButton(bindName)
+						return bindName == "LeftClick" or bindName == "RightClick"
+					end
+
 					function KeybindInit:SetBind(Key)
 						local keyString = (typeof(Key) == "EnumItem" and tostring(Key):gsub("Enum.KeyCode.", "")) or Key
 						Button.Keybind.Text = "[ " .. keyString .. " ]"
