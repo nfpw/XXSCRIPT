@@ -4236,45 +4236,45 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		end
 
 		local function UpdateKeybindEntries()
-			local currentKeybinds = {}
-			if shared.Anka and shared.Anka.Elements then
-				for uniqueID, element in pairs(shared.Anka.Elements) do
-					if element and element.GetKeybind then
-						local keybindObj = element:GetKeybind()
-						if keybindObj then
-							local bind = keybindObj:GetBind()
-							local bindString = tostring(bind):gsub("Enum.KeyCode.", "")
-							if bindString ~= "NONE" and bindString ~= "Unknown" then
-								local elementName = uniqueID:gsub(" %- %d+", "")
-								local state = false
-								local mode = "Toggle"
-								local elementType = element.Type or "Toggle"
-								if elementType == "Toggle" and element.GetState then
-									state = element:GetState()
-								elseif elementType == "Button" then
-									state = nil
-								end
-								if keybindObj.GetMode then
-									mode = keybindObj:GetMode()
-								elseif keybindObj.Mode then
-									mode = keybindObj.Mode
-								elseif keybindObj.mode then
-									mode = keybindObj.mode
-								end
-								if not ViewerConfig.ShowOnlyActive or state or mode == "Hold" or elementType == "Button" then
-									currentKeybinds[elementName] = {
-										name = elementName,
-										keybind = bindString,
-										state = state,
-										mode = mode,
-										elementType = elementType
-									}
-								end
-							end
-						end
-					end
-				end
-			end
+    		local currentKeybinds = {}
+    		if shared.Anka and shared.Anka.Elements then
+        		for uniqueID, element in pairs(shared.Anka.Elements) do
+            		if element and element.GetKeybind then
+                		local keybindObj = element:GetKeybind()
+                		if keybindObj and keybindObj.GetBind then
+                    		local bind = keybindObj:GetBind()
+                    		local bindString = tostring(bind):gsub("Enum.KeyCode.", "")
+                   			if bindString ~= "NONE" and bindString ~= "Unknown" then
+                        		local elementName = uniqueID:gsub(" %- %d+", "")
+                        		local state = false
+                        		local mode = "Toggle"
+                        		local elementType = element.Type or "Toggle"
+                        		if elementType == "Toggle" and element.GetState then
+                            		state = element:GetState()
+                        		elseif elementType == "Button" then
+                            		state = nil
+                        		end
+                        		if keybindObj.GetMode then
+                            		mode = keybindObj:GetMode()
+                        		elseif keybindObj.Mode then
+                            		mode = keybindObj.Mode
+                        		elseif keybindObj.mode then
+                            		mode = keybindObj.mode
+                        		end
+                        		if not ViewerConfig.ShowOnlyActive or state or mode == "Hold" or elementType == "Button" then
+                            		currentKeybinds[elementName] = {
+                                		name = elementName,
+                                		keybind = bindString,
+                                		state = state,
+                                		mode = mode,
+                                		elementType = elementType
+                            		}
+                        		end
+                    		end
+                		end
+            		end
+        		end
+   			end
 			for entryName, entry in pairs(KeybindEntries) do
 				if not currentKeybinds[entryName] then
 					for i = #Library.ColorTable, 1, -1 do
