@@ -564,8 +564,6 @@ do
             self.GlobalAutoloadLabel.UniqueID
         });
     end;
-
-	shared.FONDRA = true
 	
     ConfigManager:BuildFolderTree();
 end;
