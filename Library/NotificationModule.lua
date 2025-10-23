@@ -1,23 +1,25 @@
--- skidded from FONDRA V3
+--[[
+	i was so lazy to make notification for 
+	libraryso i used claude to make one 
+	this code 80% pasted -- https://claude.ai/
+]]
 
 local NotificationSystem = {}
 NotificationSystem.__index = NotificationSystem
-NotificationSystem.Spacing = 26
-NotificationSystem.AnimationSpeed = 0.25
+NotificationSystem.NotificationSize = UDim2.new(0, 300, 0, 70)
+NotificationSystem.Spacing = 5
+NotificationSystem.AnimationSpeed = 0.3
 NotificationSystem.Font = Enum.Font.Gotham
-NotificationSystem.TextSize = 12
-NotificationSystem.StartOffset = 100
+NotificationSystem.TextSize = 14
+NotificationSystem.TextColor = Color3.fromRGB(234, 234, 234)
+NotificationSystem.BackgroundColor = Color3.fromRGB(35, 35, 35)
+NotificationSystem.AccentColor = Color3.fromRGB(85, 85, 85)
+NotificationSystem.BottomOffset = 10
+NotificationSystem.ShowTimer = true
+NotificationSystem.TimerColor = Color3.fromRGB(150, 150, 150)
 
-NotificationSystem.Colors = {
-	Border1 = Color3.fromRGB(0, 0, 0),
-	Border2 = Color3.fromRGB(28, 35, 50),
-	Background1 = Color3.fromRGB(18, 22, 32),
-	Accent = Color3.fromRGB(43, 89, 255),
-	ActiveText = Color3.fromRGB(255, 255, 255),
-}
-
-local cloneref = cloneref or function(v) return v end
-local function getservice(v) return cloneref(game:GetService(v)) end
+local cloneref = cloneref or function(v) return v; end
+local function getservice(v) return cloneref(game:GetService(v)); end
 local RunService = getservice("RunService")
 local TextService = getservice("TextService")
 local TweenService = getservice("TweenService")
@@ -35,19 +37,26 @@ function NotificationSystem.New(parent)
 end
 
 function NotificationSystem:CalculatePosition(index)
-	return UDim2.new(0, 10, 0, self.StartOffset + ((index - 1) * self.Spacing))
+	local yOffset = 0
+	for i = 1, index - 1 do
+		if self.Notifications[i] and self.Notifications[i].notification and self.Notifications[i].notification.Parent then
+			yOffset = yOffset + self.Notifications[i].notification.Size.Y.Offset + self.Spacing
+		end
+	end
+	return UDim2.new(1, -self.NotificationSize.X.Offset - 10, 1, -yOffset - self.NotificationSize.Y.Offset - self.BottomOffset)
 end
 
 function NotificationSystem:UpdatePositions()
 	if not self.Container or not self.Container.Parent then
 		return
 	end
+	local yOffset = 0
 	for i, notificationData in ipairs(self.Notifications) do
 		if not notificationData.notification or not notificationData.notification.Parent then
 			continue
 		end
 		local notification = notificationData.notification
-		local targetPosition = self:CalculatePosition(i)
+		local targetPosition = UDim2.new(1, -notification.Size.X.Offset - 10, 1, -yOffset - notification.Size.Y.Offset - self.BottomOffset)
 		if notification.Position ~= targetPosition then
 			TweenService:Create(
 				notification,
@@ -55,6 +64,7 @@ function NotificationSystem:UpdatePositions()
 				{Position = targetPosition}
 			):Play()
 		end
+		yOffset = yOffset + notification.Size.Y.Offset + self.Spacing
 	end
 end
 
@@ -62,135 +72,174 @@ function NotificationSystem:CreateNotification(title, content, duration)
 	if not self.Container or not self.Container.Parent then
 		return
 	end
-
-	local Notification = {}
-	table.insert(self.Notifications, Notification)
-
 	duration = duration or 3
-	local Color = self.Colors.Accent
-	local displayText = content and (title .. content) or title
-	local Bounds = TextService:GetTextSize(displayText, self.TextSize, self.Font, Vector2.new(1000, 1000))
-
-	local Container = Instance.new("Frame")
-	Container.Name = "NotificationContainer"
-	Container.BackgroundTransparency = 1
-	Container.Size = UDim2.new(0, Bounds.X + 15, 0, 24)
-	Container.ClipsDescendants = true
-	Container.Position = self:CalculatePosition(#self.Notifications)
-	Container.Parent = self.Container
-
-	local Outline = Instance.new("Frame")
-	Outline.Name = "Outline"
-	Outline.Size = UDim2.new(1, 0, 1, 0)
-	Outline.Position = UDim2.new(-1, 0, 0, 0)
-	Outline.BackgroundColor3 = self.Colors.Border1
-	Outline.BorderSizePixel = 0
-	Outline.Parent = Container
-
-	local Middle = Instance.new("Frame")
-	Middle.Name = "Middle"
-	Middle.Size = UDim2.new(1, -2, 1, -2)
-	Middle.Position = UDim2.new(0, 1, 0, 1)
-	Middle.BackgroundColor3 = self.Colors.Border2
-	Middle.BorderSizePixel = 0
-	Middle.Parent = Outline
-
-	local Inline = Instance.new("Frame")
-	Inline.Name = "Inline"
-	Inline.Size = UDim2.new(1, -2, 1, -2)
-	Inline.Position = UDim2.new(0, 1, 0, 1)
-	Inline.BackgroundColor3 = self.Colors.Border1
-	Inline.BorderSizePixel = 0
-	Inline.Parent = Middle
-
-	local Fill = Instance.new("Frame")
-	Fill.Name = "Fill"
-	Fill.Size = UDim2.new(1, -2, 1, -2)
-	Fill.Position = UDim2.new(0, 1, 0, 1)
-	Fill.BackgroundColor3 = self.Colors.Background1
-	Fill.BorderSizePixel = 0
-	Fill.Parent = Inline
-
-	local Accent = Instance.new("Frame")
-	Accent.Name = "Accent"
-	Accent.Size = UDim2.new(0, 1, 1, 0)
-	Accent.Position = UDim2.new(0, 0, 0, 0)
-	Accent.BackgroundColor3 = Color
-	Accent.BorderSizePixel = 0
-	Accent.Parent = Fill
-
-	local Time = Instance.new("Frame")
-	Time.Name = "Time"
-	Time.Size = UDim2.new(0, 0, 0, 1)
-	Time.Position = UDim2.new(0, 0, 1, -1)
-	Time.BackgroundColor3 = Color
-	Time.BorderSizePixel = 0
-	Time.Parent = Fill
-
-	local Title = Instance.new("TextLabel")
-	Title.Name = "Title"
-	Title.Text = displayText
-	Title.Position = UDim2.new(0, 5, 0.5, 0)
-	Title.AnchorPoint = Vector2.new(0, 0.5)
-	Title.TextXAlignment = Enum.TextXAlignment.Left
-	Title.TextYAlignment = Enum.TextYAlignment.Center
-	Title.TextSize = self.TextSize
-	Title.Font = self.Font
-	Title.BackgroundTransparency = 1
-	Title.TextColor3 = self.Colors.ActiveText
-	Title.Parent = Fill
-
-	local Stroke = Instance.new("UIStroke")
-	Stroke.Parent = Title
-	Stroke.Color = Color3.fromRGB(0, 0, 0)
-	Stroke.Thickness = 1
-	Stroke.Transparency = 0
-
-	Notification["Container"] = Container
-	Notification["Outline"] = Outline
-	Notification["Middle"] = Middle
-	Notification["Inline"] = Inline
-	Notification["Fill"] = Fill
-	Notification["Accent"] = Accent
-	Notification["Time"] = Time
-	Notification["Title"] = Title
-	Notification["Stroke"] = Stroke
-
-	TweenService:Create(Outline, TweenInfo.new(self.AnimationSpeed), { 
-		Position = UDim2.new(0, 0, 0, 0) 
-	}):Play()
-
-	TweenService:Create(Time, TweenInfo.new(duration), { 
-		Size = UDim2.new(1, 0, 0, 1) 
-	}):Play()
-
-	task.delay(duration + 0.15, function()
+	local contentWidth = self.NotificationSize.X.Offset - 20
+	local contentTextSize = TextService:GetTextSize(content, self.TextSize - 2, Enum.Font.Code, Vector2.new(contentWidth, math.huge))
+	local titleHeight = 26
+	local contentHeight = contentTextSize.Y
+	local timerHeight = self.ShowTimer and 16 or 0
+	local totalHeight = titleHeight + contentHeight + timerHeight + 20
+	local notificationSize = UDim2.new(0, self.NotificationSize.X.Offset, 0, math.max(totalHeight, self.NotificationSize.Y.Offset))
+	local notification = Instance.new("Frame")
+	notification.Name = "Notification"
+	notification.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	notification.BorderSizePixel = 0
+	notification.Size = notificationSize
+	notification.Position = UDim2.new(1, notificationSize.X.Offset + 10, 1, self.BottomOffset)
+	notification.Parent = self.Container
+	notification.ClipsDescendants = true
+	local border1 = Instance.new("Frame")
+	border1.Name = "Border1"
+	border1.Size = UDim2.new(1, -2, 1, -2)
+	border1.Position = UDim2.new(0, 1, 0, 1)
+	border1.BackgroundColor3 = Color3.fromRGB(52, 53, 52)
+	border1.BorderSizePixel = 0
+	border1.Parent = notification
+	local border2 = Instance.new("Frame")
+	border2.Name = "Border2"
+	border2.Size = UDim2.new(1, -2, 1, -2)
+	border2.Position = UDim2.new(0, 1, 0, 1)
+	border2.BackgroundColor3 = Color3.fromRGB(28, 28, 28)
+	border2.BorderSizePixel = 0
+	border2.Parent = border1
+	local border3 = Instance.new("Frame")
+	border3.Name = "Border3"
+	border3.Size = UDim2.new(1, -6, 1, -6)
+	border3.Position = UDim2.new(0, 3, 0, 3)
+	border3.BackgroundColor3 = Color3.fromRGB(52, 53, 52)
+	border3.BorderSizePixel = 0
+	border3.Parent = border2
+	local inner = Instance.new("Frame")
+	inner.Name = "Frame"
+	inner.Size = UDim2.new(1, -2, 1, -2)
+	inner.Position = UDim2.new(0, 1, 0, 1)
+	inner.BackgroundColor3 = Color3.fromRGB(5, 5, 4)
+	inner.BorderSizePixel = 0
+	inner.Parent = border3
+	local gradientFrame = Instance.new("Frame")
+	gradientFrame.Size = UDim2.new(1, 0, 0, 1)
+	gradientFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	gradientFrame.BorderSizePixel = 0
+	gradientFrame.Parent = inner
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 0, 0, 1)
+	shadow.Position = UDim2.new(0, 0, 0, 1)
+	shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	shadow.BackgroundTransparency = 0.2
+	shadow.BorderSizePixel = 0
+	shadow.Parent = inner
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Text = title
+	titleLabel.Font = self.Font
+	titleLabel.TextColor3 = self.TextColor
+	titleLabel.TextSize = self.TextSize
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Position = UDim2.new(0, 10, 0, 6)
+	titleLabel.Size = UDim2.new(1, -20, 0, titleHeight - 6)
+	titleLabel.Parent = inner
+	local contentLabel = Instance.new("TextLabel")
+	contentLabel.Text = content
+	contentLabel.Font = Enum.Font.Code
+	contentLabel.TextColor3 = self.TextColor
+	contentLabel.TextSize = self.TextSize - 2
+	contentLabel.TextWrapped = true
+	contentLabel.TextXAlignment = Enum.TextXAlignment.Left
+	contentLabel.TextYAlignment = Enum.TextYAlignment.Top
+	contentLabel.BackgroundTransparency = 1
+	contentLabel.Position = UDim2.new(0, 10, 0, titleHeight)
+	contentLabel.Size = UDim2.new(1, -20, 0, contentHeight)
+	contentLabel.Parent = inner
+	local timerLabel
+	if self.ShowTimer then
+		timerLabel = Instance.new("TextLabel")
+		timerLabel.Name = "Timer"
+		timerLabel.Text = string.format("%.1fs", duration)
+		timerLabel.Font = Enum.Font.Code
+		timerLabel.TextColor3 = self.TimerColor
+		timerLabel.TextSize = self.TextSize - 4
+		timerLabel.TextXAlignment = Enum.TextXAlignment.Right
+		timerLabel.TextYAlignment = Enum.TextYAlignment.Center
+		timerLabel.BackgroundTransparency = 1
+		timerLabel.Position = UDim2.new(1, -60, 0, 6)
+		timerLabel.Size = UDim2.new(0, 50, 0, titleHeight - 6)
+		timerLabel.Parent = inner
+	end
+	local progressBar = Instance.new("Frame")
+	progressBar.Name = "ProgressBar"
+	progressBar.BackgroundColor3 = Color3.fromRGB(247, 247, 247) --self.AccentColor
+	progressBar.BorderSizePixel = 0
+	progressBar.Size = UDim2.new(1, 0, 0, 2)
+	progressBar.Position = UDim2.new(0, 0, 1, -2)
+	progressBar.Parent = inner
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new{
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 18, 18))
+	}
+	gradient.Parent = progressBar
+	local slideIn = TweenService:Create(
+		notification,
+		TweenInfo.new(self.AnimationSpeed, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{Position = self:CalculatePosition(#self.Notifications + 1)}
+	)
+	slideIn:Play()
+	local notificationData = {
+		notification = notification,
+		startTime = tick(),
+		duration = duration,
+		timerLabel = timerLabel
+	}
+	table.insert(self.Notifications, notificationData)
+	self:UpdatePositions()
+	local progressTween = TweenService:Create(
+		progressBar,
+		TweenInfo.new(duration, Enum.EasingStyle.Linear),
+		{Size = UDim2.new(0, 0, 0, 2)}
+	)
+	progressTween:Play()
+	local startTime = tick()
+	local connection
+	connection = RunService.Heartbeat:Connect(function()
+		if not self.Container or not self.Container.Parent then
+			if connection then
+				connection:Disconnect()
+			end
+			return
+		end
+		local elapsed = tick() - startTime
+		local remaining = duration - elapsed
+		if timerLabel and remaining > 0 then
+			timerLabel.Text = string.format("%.1fs", remaining)
+		end
+		if elapsed >= duration then
+			if connection then
+				connection:Disconnect()
+				connection = nil
+			end
+		end
+	end)
+	table.insert(self.ActiveConnections, connection)
+	task.delay(duration, function()
 		if not self.Container or not self.Container.Parent then
 			return
 		end
-		for i, notif in ipairs(self.Notifications) do
-			if notif == Notification then
+		local fadeOut = TweenService:Create(
+			notification,
+			TweenInfo.new(self.AnimationSpeed, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+			{Position = UDim2.new(1, notification.Size.X.Offset + 10, 1, notification.Position.Y.Offset - notification.Position.Y.Scale * self.BottomOffset)}
+		)
+		fadeOut:Play()
+		task.wait(self.AnimationSpeed)
+		for i, v in ipairs(self.Notifications) do
+			if v.notification == notification then
 				table.remove(self.Notifications, i)
 				break
 			end
 		end
-		TweenService:Create(Outline, TweenInfo.new(self.AnimationSpeed), { BackgroundTransparency = 1 }):Play()
-		TweenService:Create(Middle, TweenInfo.new(self.AnimationSpeed), { BackgroundTransparency = 1 }):Play()
-		TweenService:Create(Inline, TweenInfo.new(self.AnimationSpeed), { BackgroundTransparency = 1 }):Play()
-		TweenService:Create(Fill, TweenInfo.new(self.AnimationSpeed), { BackgroundTransparency = 1 }):Play()
-		TweenService:Create(Accent, TweenInfo.new(self.AnimationSpeed), { BackgroundTransparency = 1 }):Play()
-		TweenService:Create(Time, TweenInfo.new(self.AnimationSpeed), { BackgroundTransparency = 1 }):Play()
-		TweenService:Create(Title, TweenInfo.new(self.AnimationSpeed), { TextTransparency = 1 }):Play()
-		TweenService:Create(Stroke, TweenInfo.new(self.AnimationSpeed), { Transparency = 1 }):Play()
-		task.wait(self.AnimationSpeed)
 		self:UpdatePositions()
-		task.wait(0.1)
-		if Container then 
-			Container:Destroy() 
-		end
+		notification:Destroy()
 	end)
-
-	return Notification
 end
 
 function NotificationSystem:Destroy()
