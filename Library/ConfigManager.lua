@@ -565,6 +565,8 @@ do
         });
     end;
 
+	shared.FONDRA = true
+	
     ConfigManager:BuildFolderTree();
 end;
 
