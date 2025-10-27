@@ -21,6 +21,7 @@ local Players = getservice("Players")
 
 local IsMobile = UserInputService.TouchEnabled -- and not UserInputService.KeyboardEnabled removed this bc emulator support
 shared.Anka = shared.Anka or {}
+shared.Anka.flags = shared.Anka.flags or {}
 shared.Anka.Elements = shared.Anka.Elements or {}
 shared.Anka.ElementCounter = 0
 
@@ -1736,6 +1737,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				local function SetState(State)
 					if not Toggle or not Toggle.Parent then return end
 					if not Library.flags then return end
+					if not shared.Anka.flags then return end
 
 					TweenService:Create(Toggle.Toggle, toggleAnimInfo, {}):Cancel()
 					TweenService:Create(Toggle.Title, textAnimInfo, {}):Cancel()
@@ -1853,6 +1855,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					if UserInputService:GetFocusedTextBox() == nil then
 						if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
 							if not Library.flags then return end
+							if not shared.Anka.flags then return end
 							ToggleState = not ToggleState
 							SetState(ToggleState)
 						end
@@ -4888,7 +4891,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			--print("Disconnected " .. vvvvvxx .. " connections")
 			Library.Connections = {}
 		end
-		if Library.flags then
+		if Library.flags or shared.Anka.flags then
 			local flagsdd = 0
 			local function didcone(tbl)
 				for i, v in next, tbl do
@@ -4910,6 +4913,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 			end
 			didcone(Library.flags)
+			didcone(shared.Anka.flags)
 			-- print("Disconnected " .. flagsdd .. " flag connections")
 		end
 		Library.ColorTable = {}
@@ -4921,6 +4925,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		end
 		Library.tick = nil
 		Library.flags = nil
+		shared.Anka.flags = nil
 		--print("Library destroyed")
 	end
 
