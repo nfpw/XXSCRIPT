@@ -1412,7 +1412,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 					local inputText = TextBox.Background.Input.Text
 					if NumbersOnly then
-						local numberValue = tonumber(inputText)
+						local numberValue = tonumber(inputText) or 0
 						if numberValue then Callback(numberValue) end
 					else 
 						Callback(inputText)
