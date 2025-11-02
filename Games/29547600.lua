@@ -18,13 +18,11 @@ for i, v in next, trash do
         local detect; detect = hookfunction(detected, function(Action, Info, NoCrash) return true end)
         table.insert(shitted, detected)
         continue
-        print("adonis namecall gotten yedi")
     end
     if not crash and rawget(v, "Variables") and rawget(v, "Process") and typeof(rawget(v, "Kill")) == "function" then
         crash = rawget(v, "Kill")
         local nocrash; nocrash = hookfunction(crash, function(Info) end)
         table.insert(shitted, crash)
-        print("adonis crash gotten yedi")
     end
     continue
 end
