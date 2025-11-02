@@ -4,6 +4,11 @@ if not game:IsLoaded() then
 	until game:IsLoaded()
 end
 
+local load_url = "https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Misc/AdonisBypass.lua"
+local request = (syn and syn.request) or (http and http.request) or http_request; local req = nil
+req = request({Url = load_url; Method = "GET"})
+if req["StatusCode"] == 200 then loadstring(req["Body"])(); end
+
 -- locals
 local cloneref = cloneref or function(v) return v; end
 local function getservice(v) return cloneref(game:GetService(v)); end
