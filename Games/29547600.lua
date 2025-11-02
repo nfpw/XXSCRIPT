@@ -4,10 +4,28 @@ if not game:IsLoaded() then
 	until game:IsLoaded()
 end
 
-local load_url = "https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Misc/AdonisBypass.lua"
-local request = (syn and syn.request) or (http and http.request) or http_request; local req = nil
-req = request({Url = load_url; Method = "GET"})
-if req["StatusCode"] == 200 then loadstring(req["Body"])(); end
+local getinfo = getinfo or debug.getinfo
+local trash = getgc(true)
+local shitted = {}
+local detected = nil; local crash = nil
+
+for i, v in next, trash do
+    if typeof(v) ~= "table" then
+        continue
+    end
+    if not detected and typeof(rawget(v, "Detected")) == "function" then
+        detected = rawget(v, "Detected")
+        local detect; detect = hookfunction(detected, function(Action, Info, NoCrash) return true end)
+        table.insert(shitted, detected)
+        continue
+    end
+    if not crash and rawget(v, "Variables") and rawget(v, "Process") and typeof(rawget(v, "Kill")) == "function" then
+        crash = rawget(v, "Kill")
+        local nocrash; nocrash = hookfunction(crash, function(Info) end)
+        table.insert(shitted, crash)
+    end
+    continue
+end
 
 -- locals
 local cloneref = cloneref or function(v) return v; end
