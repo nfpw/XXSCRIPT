@@ -308,7 +308,7 @@ if Sections.BackdoorSection then
     local Backdoor = {
         BringAll = false,
         BringSelected = false,
-        SelectedPlayer = nil,
+        SelectedPlayers = {},
     }
     
     local function getplayerlist()
@@ -344,20 +344,20 @@ if Sections.BackdoorSection then
                             end
                         end
                     end
-                    task.wait()
+                    task.wait(1)
                 end
             end)
         end
     end)
-    
+
     local playerdropdown = Sections.BackdoorSection:CreateDropdown(
-        "Select Player",
+        "Select Players",
         getplayerlist(),
         function(selected)
-            Backdoor.SelectedPlayer = selected
+            Backdoor.SelectedPlayers = selected
         end,
         nil,
-        false
+        true
     )
     
     local bringselectedtoggle = Sections.BackdoorSection:CreateToggle("Bring Selected", Backdoor.BringSelected, function(state)
@@ -365,8 +365,9 @@ if Sections.BackdoorSection then
         if Backdoor.BringSelected then
             task.spawn(function()
                 while Backdoor.BringSelected do
-                    if Backdoor.SelectedPlayer then
-                        local player = getplayerbyname(Backdoor.SelectedPlayer)
+                    for _, playerName in pairs(Backdoor.SelectedPlayers) do
+                        if not Backdoor.BringSelected then break end
+                        local player = getplayerbyname(playerName)
                         if player then
                             local istekKabul = ReplicatedStorage:FindFirstChild("istekKabul")
                             if istekKabul then
@@ -374,7 +375,7 @@ if Sections.BackdoorSection then
                             end
                         end
                     end
-                    task.wait()
+                    task.wait(1)
                 end
             end)
         end
@@ -382,18 +383,20 @@ if Sections.BackdoorSection then
     
     Players.PlayerAdded:Connect(function(player)
         task.wait(0.1)
-        playerdropdown:ChangeOptions(getplayerlist(), Backdoor.SelectedPlayer)
+        playerdropdown:ChangeOptions(getplayerlist(), Backdoor.SelectedPlayers)
     end)
     
     Players.PlayerRemoving:Connect(function(player)
         task.wait(0.1)
         local ppp = getplayerlist()
-        if Backdoor.SelectedPlayer == player.Name then
-            Backdoor.SelectedPlayer = nil
-            playerdropdown:ChangeOptions(ppp, nil)
-        else
-            playerdropdown:ChangeOptions(ppp, Backdoor.SelectedPlayer)
+        local newSelected = {}
+        for _, selectedName in pairs(Backdoor.SelectedPlayers) do
+            if selectedName ~= player.Name then
+                table.insert(newSelected, selectedName)
+            end
         end
+        Backdoor.SelectedPlayers = newSelected
+        playerdropdown:ChangeOptions(ppp, Backdoor.SelectedPlayers)
     end)
 end
 
