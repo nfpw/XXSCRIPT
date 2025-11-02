@@ -18,16 +18,17 @@ for i, v in next, trash do
         local detect; detect = hookfunction(detected, function(Action, Info, NoCrash) return true end)
         table.insert(shitted, detected)
         continue
+        print("adonis namecall gotten yedi")
     end
     if not crash and rawget(v, "Variables") and rawget(v, "Process") and typeof(rawget(v, "Kill")) == "function" then
         crash = rawget(v, "Kill")
         local nocrash; nocrash = hookfunction(crash, function(Info) end)
         table.insert(shitted, crash)
+        print("adonis crash gotten yedi")
     end
     continue
 end
 
--- locals
 local cloneref = cloneref or function(v) return v; end
 local function getservice(v) return cloneref(game:GetService(v)); end
 local http_request = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request;
@@ -63,7 +64,6 @@ local function requesturl(url)
 	return req.Body
 end
 
--- functions
 local Sections = nil
 local Hooks = nil
 task.defer(function()
@@ -73,24 +73,20 @@ task.defer(function()
             local method = getnamecallmethod()
             local checkcall = checkcaller()
 
-            -- checkcall
             if checkcall then
                 return va(self, ...)
             end
 
-            -- antikick
             if not checkcall and Hooks.AntiKick and self == LocalPlayer and method == "Kick" then
                 return nil
             end
             
-            -- afkspoof
             if not checkcall and Hooks.AFKSpoof and self == ReplicatedStorage.FindFirstChild(ReplicatedStorage, "AFK") and method == "FireServer" then
                 local args = {...}
                 args[1] = true
                 return va(self, unpack(args))
             end
             
-            -- platfromspoof
             if not checkcall and Hooks.PlatformSpoof and self == ReplicatedStorage.FindFirstChild(ReplicatedStorage, "reportPlatform") and method == "FireServer" then
                 local args = {...}
                 args[1] = Hooks.PlatformType
@@ -102,7 +98,6 @@ task.defer(function()
     end
 end)
 
--- library
 local Config = (shared.Anka and shared.Anka.Config) or nil
 local Library = loadstring(requesturl("https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Library/Module.lua"))()
 local Window = Library:CreateWindow(Config, gethui())
@@ -117,6 +112,7 @@ Sections = {
     OtherSettings = Tabs.Settings:CreateSection("Misc", "right"),
     HookSection = Tabs.Main:CreateSection("Hooks", "left"),
     FarmSection = Tabs.Main:CreateSection("Farm", "right"),
+    BackdoorSection = Tabs.Main:CreateSection("Backdoor", "left"),
     BlablaSection = Tabs.Main:CreateSection("BlaBla", "right"),
 }
 
@@ -310,6 +306,99 @@ if Sections.FarmSection then
     end)
 end
 
+if Sections.BackdoorSection then
+    local Backdoor = {
+        BringAll = false,
+        BringSelected = false,
+        SelectedPlayer = nil,
+    }
+    
+    local function getplayerlist()
+        local playerList = {}
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                table.insert(playerList, player.Name)
+            end
+        end
+        return playerList
+    end
+    
+    local function getplayerbyname(name)
+        for _, player in pairs(Players:GetPlayers()) do
+            if player.Name == name then
+                return player
+            end
+        end
+        return nil
+    end
+    
+    local bringalltoggle = Sections.BackdoorSection:CreateToggle("Bring All", Backdoor.BringAll, function(state)
+        Backdoor.BringAll = state
+        if Backdoor.BringAll then
+            task.spawn(function()
+                while Backdoor.BringAll do
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if not Backdoor.BringAll then break end
+                        if player ~= LocalPlayer then
+                            local istekKabul = ReplicatedStorage:FindFirstChild("istekKabul")
+                            if istekKabul then
+                                istekKabul:FireServer(player.UserId)
+                            end
+                        end
+                    end
+                    task.wait()
+                end
+            end)
+        end
+    end)
+    
+    local playerdropdown = Sections.BackdoorSection:CreateDropdown(
+        "Select Player",
+        getplayerlist(),
+        function(selected)
+            Backdoor.SelectedPlayer = selected
+        end,
+        nil,
+        false
+    )
+    
+    local bringselectedtoggle = Sections.BackdoorSection:CreateToggle("Bring Selected", Backdoor.BringSelected, function(state)
+        Backdoor.BringSelected = state
+        if Backdoor.BringSelected then
+            task.spawn(function()
+                while Backdoor.BringSelected do
+                    if Backdoor.SelectedPlayer then
+                        local player = getplayerbyname(Backdoor.SelectedPlayer)
+                        if player then
+                            local istekKabul = ReplicatedStorage:FindFirstChild("istekKabul")
+                            if istekKabul then
+                                istekKabul:FireServer(player.UserId)
+                            end
+                        end
+                    end
+                    task.wait()
+                end
+            end)
+        end
+    end)
+    
+    Players.PlayerAdded:Connect(function(player)
+        task.wait(0.1)
+        playerdropdown:ChangeOptions(getplayerlist(), Backdoor.SelectedPlayer)
+    end)
+    
+    Players.PlayerRemoving:Connect(function(player)
+        task.wait(0.1)
+        local ppp = getplayerlist()
+        if Backdoor.SelectedPlayer == player.Name then
+            Backdoor.SelectedPlayer = nil
+            playerdropdown:ChangeOptions(ppp, nil)
+        else
+            playerdropdown:ChangeOptions(ppp, Backdoor.SelectedPlayer)
+        end
+    end)
+end
+
 if Sections.HookSection then
     Hooks = {
         AntiKick = true,
@@ -365,7 +454,6 @@ if Sections.BlablaSection then
     end)
 end
 
--- config manager
 local cfgm = loadstring(requesturl("https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Library/ConfigManager.lua"))()
 cfgm:SetLibrary(Library)
 cfgm:SetWindow(Window)
