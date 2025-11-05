@@ -1049,10 +1049,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Section.Visible = Visible
 			end
 
-			function SectionInit:Destroy()
-				Section:Destroy()
-			end
-
 			function SectionInit:IsVisible(): boolean
 				return Section.Visible
 			end
@@ -1119,6 +1115,13 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 							Label.Size = UDim2.new(1, -10, 0, Label.TextBounds.Y)
 						end
 					end
+				end
+
+				function LabelInit:Destroy()
+    				if Label and Label.Parent then
+        				Label:Destroy()
+    				end
+    				shared.Anka.Elements[UniqueID] = nil
 				end
 
 				LabelInit.Type = "Label"
@@ -1343,6 +1346,24 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 
 				function ButtonInit:GetKeybind()
 					return KeybindObject
+				end
+
+				function ButtonInit:Destroy()
+    				if ButtonConnections then
+       				 	for _, connection in next, ButtonConnections do
+            				if connection and connection.Disconnect then
+                				connection:Disconnect()
+            				end
+       					end
+        				ButtonConnections = nil
+    				end
+    				if KeybindObject then
+        				KeybindObject = nil
+    				end
+    				if Button and Button.Parent then
+        				Button:Destroy()
+    				end
+    				shared.Anka.Elements[UniqueID] = nil
 				end
 
 				ButtonInit.Type = "Button" 
@@ -3815,6 +3836,22 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				UpdateColor()
 				UpdateTransparencySlider()
 
+				function ColorpickerInit:Destroy()
+    				if Colorpicker and Colorpicker.Parent then
+       					Colorpicker:Destroy()
+    				end
+    				if Pallete and Pallete.Parent then
+        				Pallete:Destroy()
+    				end
+    				if ColorRender then ColorRender:Disconnect() end
+    				if HueRender then HueRender:Disconnect() end
+    				if TransparencyRender then TransparencyRender:Disconnect() end
+    				if ColorpickerRender then ColorpickerRender:Disconnect() end
+    				if RainbowRender then RainbowRender:Disconnect() end
+    				if sh1tcon then sh1tcon:Disconnect() end
+    				shared.Anka.Elements[UniqueID] = nil
+				end
+
 				Colorpicker.Title.TextWrapped = WrapText or false
 				if WrapText then
 					Colorpicker.Title.AutomaticSize = Enum.AutomaticSize.Y
@@ -3868,11 +3905,35 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 					Line.BackgroundColor3 = Color
 				end
 
+				function DividerInit:Destroy()
+    				if Divider and Divider.Parent then
+        				Divider:Destroy()
+    				end
+    				shared.Anka.Elements[UniqueID] = nil
+				end
+
 				DividerInit.Type = "Divider"
 				DividerInit.UniqueID = UniqueID
 				shared.Anka.Elements[UniqueID] = DividerInit
 
 				return DividerInit
+			end
+
+			function SectionInit:Destroy()
+    			for _, element in next, Section.Container:GetChildren() do
+        			if element:IsA("Frame") or element:IsA("TextButton") then
+            			local elementData = shared.Anka.Elements[element.Name:gsub(" [LBTSCPMD]$", "") .. " - " .. shared.Anka.ElementCounter]
+           				if elementData and elementData.Destroy then
+                			elementData:Destroy()
+            			else
+                			element:Destroy()
+            			end
+        			end
+    			end
+    			if AllSections[Section] then
+        			AllSections[Section] = nil
+    			end
+    			Section:Destroy()
 			end
 
 			return SectionInit
