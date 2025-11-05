@@ -1139,7 +1139,6 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Button.Parent = Section.Container 
 				Button.Title.Text = Name 
 				Button.Title.TextWrapped = WrapText or false
-
 				Library.Connections = Library.Connections or {}
 
 				if WrapText then
@@ -1363,9 +1362,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
     				if Button and Button.Parent then
         				Button:Destroy()
     				end
+					ButtonInit.Instance = nil
     				shared.Anka.Elements[UniqueID] = nil
 				end
 
+				ButtonInit.Instance = Button
 				ButtonInit.Type = "Button" 
 				ButtonInit.UniqueID = UniqueID 
 				shared.Anka.Elements[UniqueID] = ButtonInit 
