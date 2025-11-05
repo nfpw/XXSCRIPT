@@ -1067,11 +1067,11 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				shared.Anka.ElementCounter += 1
 				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
 				local Label = Folder.Label:Clone()
+				Label.RichText = true
 				Label.Name = Name .. " L"
 				Label.Parent = Section.Container
 				Label.Text = Name
 				Label.TextWrapped = WrapText or false
-				Label.RichText = true
 
 				if WrapText then
 					Label.Size = UDim2.new(1, -10, 0, 0)
