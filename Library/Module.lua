@@ -1049,6 +1049,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Section.Visible = Visible
 			end
 
+			function SectionInit:Destroy()
+				Section:Destroy()
+			end
+
 			function SectionInit:IsVisible(): boolean
 				return Section.Visible
 			end
@@ -1067,6 +1071,7 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				Label.Parent = Section.Container
 				Label.Text = Name
 				Label.TextWrapped = WrapText or false
+				Label.RichText = true
 
 				if WrapText then
 					Label.Size = UDim2.new(1, -10, 0, 0)
