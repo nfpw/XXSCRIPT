@@ -1619,6 +1619,7 @@ G2L["98"]["ZIndex"] = 3;
 G2L["98"]["BorderSizePixel"] = 0;
 G2L["98"]["BackgroundColor3"] = Color3.fromRGB(27, 27, 27);
 G2L["98"]["TextSize"] = 15;
+G2L["98"]["RichText"] = true;
 G2L["98"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Regular, Enum.FontStyle.Normal);
 G2L["98"]["TextColor3"] = Color3.fromRGB(202, 202, 202);
 G2L["98"]["BackgroundTransparency"] = 1;
