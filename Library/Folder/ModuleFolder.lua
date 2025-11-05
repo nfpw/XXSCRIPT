@@ -678,6 +678,7 @@ G2L["47"]["ZIndex"] = 3;
 G2L["47"]["BorderSizePixel"] = 0;
 G2L["47"]["BackgroundColor3"] = Color3.fromRGB(27, 27, 27);
 G2L["47"]["TextSize"] = 15;
+G2L["47"]["RichText"] = true;
 G2L["47"]["FontFace"] = Font.new([[rbxasset://fonts/families/SourceSansPro.json]], Enum.FontWeight.Regular, Enum.FontStyle.Normal);
 G2L["47"]["TextColor3"] = Color3.fromRGB(202, 202, 202);
 G2L["47"]["BackgroundTransparency"] = 1;
