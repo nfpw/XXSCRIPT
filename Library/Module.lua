@@ -1122,8 +1122,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
         				Label:Destroy()
     				end
     				shared.Anka.Elements[UniqueID] = nil
+					LabelInit.Instance = nil
 				end
 
+				LabelInit.Instance = Label
 				LabelInit.Type = "Label"
 				LabelInit.UniqueID = UniqueID
 				shared.Anka.Elements[UniqueID] = LabelInit
