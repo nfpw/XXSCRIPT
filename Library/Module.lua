@@ -1118,10 +1118,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function LabelInit:Destroy()
-    				if Label and Label.Parent then
-        				Label:Destroy()
-    				end
-    				shared.Anka.Elements[UniqueID] = nil
+					if Label and Label.Parent then
+						Label:Destroy()
+					end
+					shared.Anka.Elements[UniqueID] = nil
 					LabelInit.Instance = nil
 				end
 
@@ -1350,22 +1350,22 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function ButtonInit:Destroy()
-    				if ButtonConnections then
-       				 	for _, connection in next, ButtonConnections do
-            				if connection and connection.Disconnect then
-                				connection:Disconnect()
-            				end
-       					end
-        				ButtonConnections = nil
-    				end
-    				if KeybindObject then
-        				KeybindObject = nil
-    				end
-    				if Button and Button.Parent then
-        				Button:Destroy()
-    				end
+					if ButtonConnections then
+						for _, connection in next, ButtonConnections do
+							if connection and connection.Disconnect then
+								connection:Disconnect()
+							end
+						end
+						ButtonConnections = nil
+					end
+					if KeybindObject then
+						KeybindObject = nil
+					end
+					if Button and Button.Parent then
+						Button:Destroy()
+					end
 					ButtonInit.Instance = nil
-    				shared.Anka.Elements[UniqueID] = nil
+					shared.Anka.Elements[UniqueID] = nil
 				end
 
 				ButtonInit.Instance = Button
@@ -1499,7 +1499,15 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 						TextBox.Visible = Visible
 					end
 				end
-
+				
+				function TextBoxInit:ToggleInput(): boolean
+					if TextBox and TextBox.Parent then
+						TextBox.Background.Input.TextEditable = not TextBox.Background.Input.TextEditable
+						return TextBox.Background.Input.TextEditable
+					end
+					return false
+				end
+				
 				function TextBoxInit:IsVisible(): boolean
 					return TextBox and TextBox.Parent and TextBox.Visible
 				end
@@ -3840,19 +3848,19 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				UpdateTransparencySlider()
 
 				function ColorpickerInit:Destroy()
-    				if Colorpicker and Colorpicker.Parent then
-       					Colorpicker:Destroy()
-    				end
-    				if Pallete and Pallete.Parent then
-        				Pallete:Destroy()
-    				end
-    				if ColorRender then ColorRender:Disconnect() end
-    				if HueRender then HueRender:Disconnect() end
-    				if TransparencyRender then TransparencyRender:Disconnect() end
-    				if ColorpickerRender then ColorpickerRender:Disconnect() end
-    				if RainbowRender then RainbowRender:Disconnect() end
-    				if sh1tcon then sh1tcon:Disconnect() end
-    				shared.Anka.Elements[UniqueID] = nil
+					if Colorpicker and Colorpicker.Parent then
+						Colorpicker:Destroy()
+					end
+					if Pallete and Pallete.Parent then
+						Pallete:Destroy()
+					end
+					if ColorRender then ColorRender:Disconnect() end
+					if HueRender then HueRender:Disconnect() end
+					if TransparencyRender then TransparencyRender:Disconnect() end
+					if ColorpickerRender then ColorpickerRender:Disconnect() end
+					if RainbowRender then RainbowRender:Disconnect() end
+					if sh1tcon then sh1tcon:Disconnect() end
+					shared.Anka.Elements[UniqueID] = nil
 				end
 
 				Colorpicker.Title.TextWrapped = WrapText or false
@@ -3909,10 +3917,10 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 				end
 
 				function DividerInit:Destroy()
-    				if Divider and Divider.Parent then
-        				Divider:Destroy()
-    				end
-    				shared.Anka.Elements[UniqueID] = nil
+					if Divider and Divider.Parent then
+						Divider:Destroy()
+					end
+					shared.Anka.Elements[UniqueID] = nil
 				end
 
 				DividerInit.Type = "Divider"
@@ -3923,20 +3931,20 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 			end
 
 			function SectionInit:Destroy()
-    			for _, element in next, Section.Container:GetChildren() do
-        			if element:IsA("Frame") or element:IsA("TextButton") then
-            			local elementData = shared.Anka.Elements[element.Name:gsub(" [LBTSCPMD]$", "") .. " - " .. shared.Anka.ElementCounter]
-           				if elementData and elementData.Destroy then
-                			elementData:Destroy()
-            			else
-                			element:Destroy()
-            			end
-        			end
-    			end
-    			if AllSections[Section] then
-        			AllSections[Section] = nil
-    			end
-    			Section:Destroy()
+				for _, element in next, Section.Container:GetChildren() do
+					if element:IsA("Frame") or element:IsA("TextButton") then
+						local elementData = shared.Anka.Elements[element.Name:gsub(" [LBTSCPMD]$", "") .. " - " .. shared.Anka.ElementCounter]
+						if elementData and elementData.Destroy then
+							elementData:Destroy()
+						else
+							element:Destroy()
+						end
+					end
+				end
+				if AllSections[Section] then
+					AllSections[Section] = nil
+				end
+				Section:Destroy()
 			end
 
 			return SectionInit
@@ -4304,45 +4312,45 @@ function Library:CreateWindow(Config: {WindowName: string, Color: Color3, MinHei
 		end
 
 		local function UpdateKeybindEntries()
-    		local currentKeybinds = {}
-    		if shared.Anka and shared.Anka.Elements then
-        		for uniqueID, element in pairs(shared.Anka.Elements) do
-            		if element and element.GetKeybind then
-                		local keybindObj = element:GetKeybind()
-                		if keybindObj and keybindObj.GetBind then
-                    		local bind = keybindObj:GetBind()
-                    		local bindString = tostring(bind):gsub("Enum.KeyCode.", "")
-                   			if bindString ~= "NONE" and bindString ~= "Unknown" then
-                        		local elementName = uniqueID:gsub(" %- %d+", "")
-                        		local state = false
-                        		local mode = "Toggle"
-                        		local elementType = element.Type or "Toggle"
-                        		if elementType == "Toggle" and element.GetState then
-                            		state = element:GetState()
-                        		elseif elementType == "Button" then
-                            		state = nil
-                        		end
-                        		if keybindObj.GetMode then
-                            		mode = keybindObj:GetMode()
-                        		elseif keybindObj.Mode then
-                            		mode = keybindObj.Mode
-                        		elseif keybindObj.mode then
-                            		mode = keybindObj.mode
-                        		end
-                        		if not ViewerConfig.ShowOnlyActive or state or mode == "Hold" or elementType == "Button" then
-                            		currentKeybinds[elementName] = {
-                                		name = elementName,
-                                		keybind = bindString,
-                                		state = state,
-                                		mode = mode,
-                                		elementType = elementType
-                            		}
-                        		end
-                    		end
-                		end
-            		end
-        		end
-   			end
+			local currentKeybinds = {}
+			if shared.Anka and shared.Anka.Elements then
+				for uniqueID, element in pairs(shared.Anka.Elements) do
+					if element and element.GetKeybind then
+						local keybindObj = element:GetKeybind()
+						if keybindObj and keybindObj.GetBind then
+							local bind = keybindObj:GetBind()
+							local bindString = tostring(bind):gsub("Enum.KeyCode.", "")
+							if bindString ~= "NONE" and bindString ~= "Unknown" then
+								local elementName = uniqueID:gsub(" %- %d+", "")
+								local state = false
+								local mode = "Toggle"
+								local elementType = element.Type or "Toggle"
+								if elementType == "Toggle" and element.GetState then
+									state = element:GetState()
+								elseif elementType == "Button" then
+									state = nil
+								end
+								if keybindObj.GetMode then
+									mode = keybindObj:GetMode()
+								elseif keybindObj.Mode then
+									mode = keybindObj.Mode
+								elseif keybindObj.mode then
+									mode = keybindObj.mode
+								end
+								if not ViewerConfig.ShowOnlyActive or state or mode == "Hold" or elementType == "Button" then
+									currentKeybinds[elementName] = {
+										name = elementName,
+										keybind = bindString,
+										state = state,
+										mode = mode,
+										elementType = elementType
+									}
+								end
+							end
+						end
+					end
+				end
+			end
 			for entryName, entry in pairs(KeybindEntries) do
 				if not currentKeybinds[entryName] then
 					for i = #Library.ColorTable, 1, -1 do
