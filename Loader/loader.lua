@@ -6,23 +6,23 @@ local req = nil
 
 loader["request_url"] = function(url)
 	req = request({Url = url, Method = "GET"})
-	if req.StatusCode ~= 200 then; return nil, req.StatusCode end
+	if req.StatusCode ~= 200 then return nil, req.StatusCode; end
 	return req.Body
 end
 
 loader["check_script"] = function(url)
 	local body, statuscode = loader["request_url"](url)
 	if body then
-		return true, body; else; return false, statuscode
+		return true, body; else return false, statuscode
 	end
 end
 
 loader["load_script"] = function(url, content)
 	local scriptcontent = content; if not scriptcontent then
 		local body, statuscode = loader["request_url"](url)
-		if not body then; return end
+		if not body then return end
 		scriptcontent = body
-	end; local success, result = pcall(function(); return loadstring(scriptcontent)() end)
+	end; local success, result = pcall(function() return loadstring(scriptcontent)() end)
 end
 
 loader["init"] = function()
@@ -31,7 +31,7 @@ loader["init"] = function()
 	local universal = githuburl .. "universal.lua"
 	local gamescriptexist, gamecontent = loader["check_script"](gameid)
 	if gamescriptexist then
-		loader["load_script"](gameid, gamecontent) else; loader["load_script"](universal, nil)
+		loader["load_script"](gameid, gamecontent) else loader["load_script"](universal, nil)
 	end
 end
 
