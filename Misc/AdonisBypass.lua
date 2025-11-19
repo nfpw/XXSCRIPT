@@ -29,7 +29,7 @@ end
 
 if shared["Anka"]["Adonis"]["RemoveClient"] then
     local funnydetect; funnydetect = hookfunction(getrenv().debug.info, newcclosure(function(...)
-        if detected then print("adonis silindi"); return coroutine.yield(coroutine.running()); end
+        if detected then return coroutine.yield(coroutine.running()); end
         return funnydetect(...)
     end))
 end
