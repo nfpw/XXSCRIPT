@@ -15,6 +15,7 @@ local Library = {
 	tick = tick(),
 	Connections = {},
 	flags = {},
+	Windows = {}
 }
 local cloneref = cloneref or function(v)
 	return v
@@ -41,6 +42,11 @@ shared.Anka = shared.Anka or {}
 shared.Anka.flags = shared.Anka.flags or {}
 shared.Anka.Elements = shared.Anka.Elements or {}
 shared.Anka.ElementCounter = 0
+
+function Library:GetTextBounds(Text, Font, Size, Resolution)
+	local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
+	return Bounds.X, Bounds.Y
+end -- credits linoria library
 
 --[[
 local Assets = {
@@ -472,16 +478,13 @@ function Library:Notify(title, content, duration)
 	Notifications:CreateNotification(title, content, duration)
 end
 
-function Library:CreateWindow(
-	Config: {
-		WindowName: string,
-		Color: Color3,
-		MinHeight: number?,
-		MaxHeight: number?,
-		InitialHeight: number?,
-	},
-	Parent: Instance
-): Window
+function Library:CreateWindow(Config: {
+	WindowName: string,
+	Color: Color3,
+	MinHeight: number?,
+	MaxHeight: number?,
+	InitialHeight: number?,
+	}, Parent: Instance): Window
 	local WindowInit: Window = {}
 
 	if Config == nil then
@@ -1061,11 +1064,6 @@ function Library:CreateWindow(
 			end
 		end
 	end
-	
-	function Library:GetTextBounds(Text, Font, Size, Resolution)
-		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
-		return Bounds.X, Bounds.Y
-	end -- credits linoria library
 	
 	function WindowInit:ChangeColor(Color)
 		ChangeColor(Color)
@@ -5746,7 +5744,15 @@ function Library:CreateWindow(
 		end
 	end
 
+	local windowId = #Library.Windows + 1
+	Library.Windows[windowId] = WindowInit
+	WindowInit._id = windowId
+
 	function WindowInit:Destroy()
+		if self._id then
+			Library.Windows[self._id] = nil
+		end
+
 		self:CreateGlow(false)
 		if self.particles then
 			for _, particle in next, self.particles do
@@ -5764,84 +5770,103 @@ function Library:CreateWindow(
 			self.ReopenButton:Destroy()
 			self.ReopenButton = nil
 		end
+
 		for i = #Library.ColorTable, 1, -1 do
-			if
-				Library.ColorTable[i] == Screen
-				or (Library.ColorTable[i].IsDescendantOf and Library.ColorTable[i]:IsDescendantOf(Screen))
-			then
+			local item = Library.ColorTable[i]
+			if item and (item == Screen or (item.IsDescendantOf and item:IsDescendantOf(Screen))) then
 				table.remove(Library.ColorTable, i)
 			end
 		end
-		if Notifications and Notifications.Container then
-			Notifications.Container:Destroy()
-		end
-		if Notifications then
-			Notifications:Destroy()
-		end
-	end
 
-	function Library:Destroy()
-		NotificationsGui:Destroy()
-		WindowInit:Destroy()
-		if shared.Anka and shared.Anka.Elements then
-			local vvvvvv = 0
-			for _ in next, shared.Anka.Elements do
-				vvvvvv += 1
-			end
-			--print("Destroyed " .. vvvvvv .. " elements")
-			shared.Anka.Elements = {}
-		end
-		if Library.Connections then
-			local vvvvvxx = 0
-			for i, connection in next, Library.Connections do
-				if connection and connection.Disconnect then
-					connection:Disconnect()
-					Library.Connections[i] = nil
-					vvvvvxx += 1
-				end
-			end
-			--print("Disconnected " .. vvvvvxx .. " connections")
-			Library.Connections = {}
-		end
-		if Library.flags or shared.Anka.flags then
-			local flagsdd = 0
-			local function didcone(tbl)
-				for i, v in next, tbl do
-					if type(v) == "table" then
-						didcone(v)
-					elseif typeof(v) == "RBXScriptConnection" then
-						v:Disconnect()
-						tbl[i] = nil
-						flagsdd += 1
-					elseif type(v) == "table" and type(v.Disconnect) == "function" then
-						v:Disconnect()
-						tbl[i] = nil
-						flagsdd += 1
-					elseif type(v) == "boolean" then
-						tbl[i] = false
-					elseif type(v) == "function" then
-						tbl[i] = nil
-					end
-				end
-			end
-			didcone(Library.flags)
-			didcone(shared.Anka.flags)
-			-- print("Disconnected " .. flagsdd .. " flag connections")
-		end
-		Library.ColorTable = {}
-		if shared.Anka then
-			shared.Anka.ElementCounter = 0
-		end
 		if Screen then
 			Screen:Destroy()
 		end
-		Library.tick = nil
-		Library.flags = nil
-		shared.Anka.flags = nil
-		--print("Library destroyed")
 	end
 
 	return WindowInit
+end
+
+function Library:Destroy()
+	for id, window in pairs(Library.Windows) do
+		if window and type(window.Destroy) == "function" then
+			pcall(function()
+				window:Destroy()
+			end)
+		end
+	end
+	Library.Windows = {}
+
+	if NotificationsGui and NotificationsGui.Parent then
+		NotificationsGui:Destroy()
+	end
+
+	if Notifications then
+		if type(Notifications.Destroy) == "function" then
+			pcall(function()
+				Notifications:Destroy()
+			end)
+		elseif Notifications.Container and Notifications.Container.Parent then
+			Notifications.Container:Destroy()
+		end
+	end
+
+	if shared.Anka and shared.Anka.Elements then
+		local elementcount = 0
+		for id, element in pairs(shared.Anka.Elements) do
+			if element and type(element.Destroy) == "function" then
+				pcall(function()
+					element:Destroy()
+				end)
+				elementcount = elementcount + 1
+			end
+		end
+		shared.Anka.Elements = {}
+	end
+
+	if Library.Connections then
+		local connectioncount = 0
+		for i, connection in pairs(Library.Connections) do
+			if connection and type(connection.Disconnect) == "function" then
+				pcall(function()
+					connection:Disconnect()
+				end)
+				connectioncount = connectioncount + 1
+			end
+		end
+		Library.Connections = {}
+	end
+	
+	local flagconnectioncount = 0
+	local function cleanupTable(tbl)
+		if not tbl then return end
+		for key, value in pairs(tbl) do
+			if type(value) == "table" then
+				cleanupTable(value)
+			elseif typeof(value) == "RBXScriptConnection" then
+				pcall(function()
+					value:Disconnect()
+				end)
+				flagconnectioncount = flagconnectioncount + 1
+			elseif type(value) == "function" and value.Disconnect then
+				pcall(function()
+					value:Disconnect()
+				end)
+				flagconnectioncount = flagconnectioncount + 1
+			end
+		end
+	end
+
+	cleanupTable(Library.flags)
+	cleanupTable(shared.Anka and shared.Anka.flags)
+
+	Library.ColorTable = {}
+	if shared.Anka then
+		shared.Anka.ElementCounter = 0
+		shared.Anka.flags = {}
+	end
+
+	Library.tick = nil
+	Library.flags = {}
 end
 
 return Library
