@@ -284,7 +284,7 @@ local function makeresizable(
 				Dragging
 				and (
 					Input.UserInputType == Enum.UserInputType.MouseMovement
-					or Input.UserInputType == Enum.UserInputType.Touch
+						or Input.UserInputType == Enum.UserInputType.Touch
 				)
 			then
 				local Delta = Input.Position.Y - StartPos
@@ -296,7 +296,7 @@ local function makeresizable(
 				DraggingCorner
 				and (
 					Input.UserInputType == Enum.UserInputType.MouseMovement
-					or Input.UserInputType == Enum.UserInputType.Touch
+						or Input.UserInputType == Enum.UserInputType.Touch
 				)
 			then
 				local Delta = Input.Position - StartPos
@@ -1061,7 +1061,12 @@ function Library:CreateWindow(
 			end
 		end
 	end
-
+	
+	function Library:GetTextBounds(Text, Font, Size, Resolution)
+		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
+		return Bounds.X, Bounds.Y
+	end -- credits linoria library
+	
 	function WindowInit:ChangeColor(Color)
 		ChangeColor(Color)
 	end
@@ -1897,10 +1902,14 @@ function Library:CreateWindow(
 
 				local InfoTooltip = nil
 				if InfoLocal then
+					local naturalwidth, _ = Library:GetTextBounds(InfoLocal, Enum.Font.SourceSans, 14)
+					local tooltipwidth = math.min(math.max(naturalwidth + 16, 150), 300)
+					local _, wrapheight = Library:GetTextBounds(InfoLocal, Enum.Font.SourceSans, 14, Vector2.new(tooltipwidth - 16, 10000))
+
 					InfoTooltip = Instance.new("Frame")
 					InfoTooltip.Name = "InfoTooltip"
-					InfoTooltip.Size = UDim2.new(0, 200, 0, 50)
-					InfoTooltip.Position = UDim2.new(0, 0, 1, 5)
+					InfoTooltip.Size = UDim2.new(0, tooltipwidth, 0, wrapheight + 16)
+					InfoTooltip.Position = UDim2.new(1, -tooltipwidth - 5, 1, 5)
 					InfoTooltip.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 					InfoTooltip.BorderSizePixel = 1
 					InfoTooltip.BorderColor3 = Color3.fromRGB(55, 55, 55)
@@ -1933,8 +1942,8 @@ function Library:CreateWindow(
 
 					local TooltipText = Instance.new("TextLabel")
 					TooltipText.Name = "Text"
-					TooltipText.Size = UDim2.new(1, -10, 1, -10)
-					TooltipText.Position = UDim2.new(0, 5, 0, 5)
+					TooltipText.Size = UDim2.new(0, tooltipwidth - 16, 0, wrapheight)
+					TooltipText.Position = UDim2.new(0, 8, 0, 8)
 					TooltipText.BackgroundTransparency = 1
 					TooltipText.Text = InfoLocal
 					TooltipText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1946,10 +1955,6 @@ function Library:CreateWindow(
 					TooltipText.TextYAlignment = Enum.TextYAlignment.Top
 					TooltipText.ZIndex = InfoTooltip.ZIndex + 1
 					TooltipText.Parent = InfoTooltip
-					task.wait()
-					local textBounds = TooltipText.TextBounds
-					InfoTooltip.Size = UDim2.new(0, math.max(textBounds.X + 10, 150), 0, textBounds.Y + 10)
-					InfoTooltip.Position = UDim2.new(1, -InfoTooltip.Size.X.Offset, 1, 5)
 				end
 
 				local function UpdateTitleSize()
@@ -2032,36 +2037,12 @@ function Library:CreateWindow(
 					local function ShowInfoTooltip()
 						if InfoTooltip then
 							InfoTooltip.Visible = true
-							InfoTooltip.Size = UDim2.new(0, 0, 0, InfoTooltip.Size.Y.Offset)
-							local showTween = TweenService:Create(
-								InfoTooltip,
-								TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-								{
-									Size = UDim2.new(
-										0,
-										math.max(InfoTooltip.Text.TextBounds.X + 10, 150),
-										0,
-										InfoTooltip.Text.TextBounds.Y + 10
-									),
-								}
-							)
-							showTween:Play()
 						end
 					end
 
 					local function HideInfoTooltip()
 						if InfoTooltip then
-							local hideTween = TweenService:Create(
-								InfoTooltip,
-								TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-								{
-									Size = UDim2.new(0, 0, 0, InfoTooltip.Size.Y.Offset),
-								}
-							)
-							hideTween:Play()
-							hideTween.Completed:Connect(function()
-								InfoTooltip.Visible = false
-							end)
+							InfoTooltip.Visible = false
 						end
 					end
 
@@ -2332,9 +2313,13 @@ function Library:CreateWindow(
 					if InfoLocal then
 						InfoIndicator.Visible = true
 						if InfoTooltip then
+							local naturalwidth, _ = Library:GetTextBounds(InfoLocal, Enum.Font.SourceSans, 14)
+							local tooltipwidth = math.min(math.max(naturalwidth + 16, 150), 300)
+							local _, wraheight = Library:GetTextBounds(InfoLocal, Enum.Font.SourceSans, 14, Vector2.new(tooltipwidth - 16, 10000))
+							InfoTooltip.Size = UDim2.new(0, tooltipwidth, 0, wraheight + 16)
+							InfoTooltip.Position = UDim2.new(1, -tooltipwidth - 5, 1, 5)
 							InfoTooltip.Text.Text = InfoLocal
-							local textBounds = InfoTooltip.Text.TextBounds
-							InfoTooltip.Size = UDim2.new(0, math.max(textBounds.X + 10, 150), 0, textBounds.Y + 10)
+							InfoTooltip.Text.Size = UDim2.new(0, tooltipwidth - 16, 0, wraheight)
 						end
 					else
 						InfoIndicator.Visible = false
@@ -3154,7 +3139,7 @@ function Library:CreateWindow(
 									or 1
 							else
 								child.BackgroundTransparency = visible
-										and (CurrentSelectedOption == child.Name and 0.7 or 1)
+									and (CurrentSelectedOption == child.Name and 0.7 or 1)
 									or 1
 							end
 						end
@@ -3748,8 +3733,8 @@ function Library:CreateWindow(
 							ColorPreview.BackgroundTransparency = CurrentTransparency
 							local r, g, b =
 								math.round(currentColor.R * 255),
-								math.round(currentColor.G * 255),
-								math.round(currentColor.B * 255)
+							math.round(currentColor.G * 255),
+							math.round(currentColor.B * 255)
 							local alpha = math.round((1 - CurrentTransparency) * 255)
 							InputBox.PlaceholderText = string.format("RGBA: %d, %d, %d, %d", r, g, b, alpha)
 							Dot.Position = UDim2.new(ColorTable.Saturation, 0, 1 - ColorTable.Value, 0)
@@ -4246,8 +4231,8 @@ function Library:CreateWindow(
 					ColorPreview.BackgroundTransparency = CurrentTransparency
 					local r, g, b =
 						math.round(currentColor.R * 255),
-						math.round(currentColor.G * 255),
-						math.round(currentColor.B * 255)
+					math.round(currentColor.G * 255),
+					math.round(currentColor.B * 255)
 					local alpha = math.round((1 - CurrentTransparency) * 255)
 					InputBox.PlaceholderText = string.format("RGBA: %d, %d, %d, %d", r, g, b, alpha)
 					Dot.Position = UDim2.new(ColorTable.Saturation, 0, 1 - ColorTable.Value, 0)
@@ -4789,11 +4774,6 @@ function Library:CreateWindow(
 		end)
 	)
 
-	function Library:GetTextBounds(Text, Font, Size, Resolution)
-		local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
-		return Bounds.X, Bounds.Y
-	end -- credits linoria library
-
 	function Library:Hud()
 		local HudInit = {}
 		local Hud = Folder.Hud:Clone()
@@ -5063,8 +5043,8 @@ function Library:CreateWindow(
 			KeybindLabel.BackgroundTransparency = 1
 			KeybindLabel.Text = displayText
 			local accentColor = Library.ColorTable
-					and #Library.ColorTable > 0
-					and Library.ColorTable[1].BackgroundColor3
+				and #Library.ColorTable > 0
+				and Library.ColorTable[1].BackgroundColor3
 				or Color3.fromRGB(0, 162, 255)
 			KeybindLabel.TextColor3 = state and accentColor or Color3.fromRGB(200, 200, 200)
 			KeybindLabel.TextScaled = true
@@ -5115,8 +5095,8 @@ function Library:CreateWindow(
 			entry.KeybindLabel.Text = displayText
 
 			local accentColor = Library.ColorTable
-					and #Library.ColorTable > 0
-					and Library.ColorTable[1].BackgroundColor3
+				and #Library.ColorTable > 0
+				and Library.ColorTable[1].BackgroundColor3
 				or Color3.fromRGB(0, 162, 255)
 			entry.KeybindLabel.TextColor3 = state and accentColor or Color3.fromRGB(200, 200, 200)
 
@@ -5138,8 +5118,8 @@ function Library:CreateWindow(
 
 		local function RefreshKeybindColors()
 			local accentColor = Library.ColorTable
-					and #Library.ColorTable > 0
-					and Library.ColorTable[1].BackgroundColor3
+				and #Library.ColorTable > 0
+				and Library.ColorTable[1].BackgroundColor3
 				or Color3.fromRGB(0, 162, 255)
 			for entryName, entry in pairs(KeybindEntries) do
 				if entry and entry.KeybindLabel then
