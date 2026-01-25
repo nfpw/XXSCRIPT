@@ -532,13 +532,6 @@ function Library:CreateWindow(Config: {
 	repeat
 		wait()
 	until Folder ~= nil
-	if RunService:IsStudio() then
-		Notifications = require(ReplicatedStorage.notif).New(NotificationsGui, Config.Color)
-	else
-		Notifications = loadstring(
-			requesturl("https://raw.githubusercontent.com/nfpw/XXSCRIPT/refs/heads/main/Library/NotificationModule.lua")
-		)().New(NotificationsGui, Config.Color)
-	end
 
 	local Screen = Folder.Bracket:Clone()
 	local Main = Screen.Main
