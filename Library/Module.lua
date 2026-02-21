@@ -23,11 +23,6 @@ end
 local function getservice(v)
 	return cloneref(game:GetService(v))
 end
-local http_request = (syn and syn.request)
-	or (http and http.request)
-	or http_request
-	or (fluxus and fluxus.request)
-	or request
 local shared = (getgenv and getgenv()) or shared or _G
 local ReplicatedStorage = getservice("ReplicatedStorage")
 local UserInputService = getservice("UserInputService")
@@ -38,10 +33,11 @@ local RunService = getservice("RunService")
 local Players = getservice("Players")
 
 local IsMobile = UserInputService.TouchEnabled -- and not UserInputService.KeyboardEnabled removed this bc emulator support
-shared.Anka = shared.Anka or {}
-shared.Anka.flags = shared.Anka.flags or {}
-shared.Anka.Elements = shared.Anka.Elements or {}
-shared.Anka.ElementCounter = 0
+local Anka = shared.Anka or {}
+shared.Anka = Anka
+Anka.flags = Anka.flags or {}
+Anka.Elements = Anka.Elements or {}
+Anka.ElementCounter = 0
 
 function Library:GetTextBounds(Text, Font, Size, Resolution)
 	local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
@@ -68,7 +64,7 @@ local function requesturl(i, v)
 		return nil
 	end
 	if v == nil and not RunService:IsStudio() then
-		local req = http_request({
+		local req = request({
 			Url = i,
 			Method = "GET",
 		})
@@ -78,7 +74,7 @@ local function requesturl(i, v)
 		return req.Body
 	end
 	local baseurl = "https://raw.githubusercontent.com/nfpw/Anka/main/Assests/"
-	local req = http_request({
+	local req = request({
 		Url = baseurl .. i,
 		Method = "GET",
 	})
@@ -89,7 +85,7 @@ local function requesturl(i, v)
 end
 
 local function asset(name: string, v)
-	if shared.Anka.AnkaLoadAssets then
+	if Anka.AnkaLoadAssets then
 		local asset = Assets[name]
 		if not asset then
 			return
@@ -516,7 +512,7 @@ function Library:CreateWindow(Config: {
 	end
 
 	if Config.Assets then
-		shared.Anka.AnkaLoadAssets = true
+		Anka.AnkaLoadAssets = true
 	end
 
 	local Folder = nil
@@ -761,7 +757,7 @@ function Library:CreateWindow(Config: {
 		TransitionFrame.Position = UDim2.new(1, 0, 0, 0)
 		TransitionFrame.AnchorPoint = Vector2.new(1, 0)
 		TransitionFrame.ZIndex = 10
-		if shared.Anka and shared.Anka.AnkaLoadAssets then
+		if Anka and Anka.AnkaLoadAssets then
 			TransitionFrame.Visible = false
 		else
 			TransitionFrame.Visible = true
@@ -850,7 +846,7 @@ function Library:CreateWindow(Config: {
 			return
 		end
 		IsTabSwitching = true
-		for _, element in next, shared.Anka.Elements do
+		for _, element in next, Anka.Elements do
 			if element.Type == "ColorPicker" then
 				element:ClosePallete()
 			end
@@ -1010,9 +1006,9 @@ function Library:CreateWindow(Config: {
 				end
 			end
 		end
-		for UniqueID, Element in next, shared.Anka.Elements do
+		for UniqueID, Element in next, Anka.Elements do
 			if not Element or (Element.Object and not Element.Object.Parent) then
-				shared.Anka.Elements[UniqueID] = nil
+				Anka.Elements[UniqueID] = nil
 				continue
 			end
 			if Element.Type == "Toggle" and Element.UpdateColors then
@@ -1045,9 +1041,9 @@ function Library:CreateWindow(Config: {
 				UpdateElementFont(child)
 			end
 		end
-		for UniqueID, Element in next, shared.Anka.Elements do
+		for UniqueID, Element in next, Anka.Elements do
 			if not Element or (Element.Object and not Element.Object.Parent) then
-				shared.Anka.Elements[UniqueID] = nil
+				Anka.Elements[UniqueID] = nil
 				continue
 			end
 			if Element.UpdateFont then
@@ -1067,7 +1063,7 @@ function Library:CreateWindow(Config: {
 	end
 
 	function WindowInit:SetBackground(ImageId)
-		if shared.Anka.AnkaLoadAssets then
+		if Anka.AnkaLoadAssets then
 			Holder.Image = ImageId
 		end
 	end
@@ -1270,8 +1266,8 @@ function Library:CreateWindow(Config: {
 
 			function SectionInit:CreateLabel(Name: string, WrapText: boolean?): Element
 				local LabelInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local Label = Folder.Label:Clone()
 				Label.RichText = true
 				Label.Name = Name .. " L"
@@ -1331,21 +1327,21 @@ function Library:CreateWindow(Config: {
 					if Label and Label.Parent then
 						Label:Destroy()
 					end
-					shared.Anka.Elements[UniqueID] = nil
+					Anka.Elements[UniqueID] = nil
 					LabelInit.Instance = nil
 				end
 
 				LabelInit.Instance = Label
 				LabelInit.Type = "Label"
 				LabelInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = LabelInit
+				Anka.Elements[UniqueID] = LabelInit
 				return LabelInit
 			end
 
 			function SectionInit:CreateButton(Name: string, Callback: () -> (), WrapText: boolean?): Element
 				local ButtonInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local Button = Folder.Button:Clone()
 				Button.Name = Name .. " B"
 				Button.Parent = Section.Container
@@ -1627,13 +1623,13 @@ function Library:CreateWindow(Config: {
 						Button:Destroy()
 					end
 					ButtonInit.Instance = nil
-					shared.Anka.Elements[UniqueID] = nil
+					Anka.Elements[UniqueID] = nil
 				end
 
 				ButtonInit.Instance = Button
 				ButtonInit.Type = "Button"
 				ButtonInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = ButtonInit
+				Anka.Elements[UniqueID] = ButtonInit
 				return ButtonInit
 			end
 
@@ -1645,8 +1641,8 @@ function Library:CreateWindow(Config: {
 				WrapText: boolean?
 			): Element
 				local TextBoxInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local TextBox = Folder.TextBox:Clone()
 				TextBox.Name = Name .. " T"
 				TextBox.Parent = Section.Container
@@ -1828,7 +1824,7 @@ function Library:CreateWindow(Config: {
 
 				TextBoxInit.Type = "TextBox"
 				TextBoxInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = TextBoxInit
+				Anka.Elements[UniqueID] = TextBoxInit
 				return TextBoxInit
 			end
 
@@ -1841,8 +1837,8 @@ function Library:CreateWindow(Config: {
 				WrapText: boolean?
 			): Element
 				local ToggleInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local DefaultLocal = Default or false
 				local StatusLocal = Status or "normal"
 				local InfoLocal = Info
@@ -2107,7 +2103,7 @@ function Library:CreateWindow(Config: {
 					if not Library.flags then
 						return
 					end
-					if not shared.Anka.flags then
+					if not Anka.flags then
 						return
 					end
 
@@ -2258,7 +2254,7 @@ function Library:CreateWindow(Config: {
 								if not Library.flags then
 									return
 								end
-								if not shared.Anka.flags then
+								if not Anka.flags then
 									return
 								end
 								ToggleState = not ToggleState
@@ -2665,7 +2661,7 @@ function Library:CreateWindow(Config: {
 
 				ToggleInit.Type = "Toggle"
 				ToggleInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = ToggleInit
+				Anka.Elements[UniqueID] = ToggleInit
 				SetState(DefaultLocal)
 				return ToggleInit
 			end
@@ -2681,8 +2677,8 @@ function Library:CreateWindow(Config: {
 				Suffix: string?
 			): Element
 				local SliderInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local DefaultLocal = Default or 50
 				local Slider = Folder.Slider:Clone()
 				Slider.Name = Name .. " S"
@@ -2937,7 +2933,7 @@ function Library:CreateWindow(Config: {
 				SetValue(DefaultLocal)
 				SliderInit.Type = "Slider"
 				SliderInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = SliderInit
+				Anka.Elements[UniqueID] = SliderInit
 				return SliderInit
 			end
 
@@ -2951,8 +2947,8 @@ function Library:CreateWindow(Config: {
 				KeepRemoved: boolean?
 			): Element
 				local DropdownInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local Dropdown = Folder.Dropdown:Clone()
 				Dropdown.Name = Name .. (Multi and " MD" or " D")
 				Dropdown.Parent = Section.Container
@@ -3602,7 +3598,7 @@ function Library:CreateWindow(Config: {
 
 				DropdownInit.Type = Multi and "MultiDropdown" or "Dropdown"
 				DropdownInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = DropdownInit
+				Anka.Elements[UniqueID] = DropdownInit
 				return DropdownInit
 			end
 
@@ -3615,11 +3611,11 @@ function Library:CreateWindow(Config: {
 				AttachToToggle: Element?
 			): Element
 				local ColorpickerInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = Name .. " - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = Name .. " - " .. Anka.ElementCounter
 				local Colorpicker = Folder.Colorpicker:Clone()
 				local Pallete = Folder.Palette:Clone()
-				Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
+				Pallete.Name = Name .. " P " .. Anka.ElementCounter
 
 				Library.Connections = Library.Connections or {}
 
@@ -3674,7 +3670,7 @@ function Library:CreateWindow(Config: {
 						GlowFrame.Parent = ColorIndicator
 						GlowFrame.ZIndex = ColorIndicator.ZIndex - 1
 
-						Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
+						Pallete.Name = Name .. " P " .. Anka.ElementCounter
 						Pallete.Parent = Screen
 						Pallete.Visible = false
 
@@ -4165,7 +4161,7 @@ function Library:CreateWindow(Config: {
 						ColorpickerInit.Type = "AttachedColorPicker"
 						ColorpickerInit.UniqueID = UniqueID
 						ColorpickerInit.IsAccentColorpicker = IsAccentColorpicker or false
-						shared.Anka.Elements[UniqueID] = ColorpickerInit
+						Anka.Elements[UniqueID] = ColorpickerInit
 
 						return ColorpickerInit
 					end
@@ -4176,7 +4172,7 @@ function Library:CreateWindow(Config: {
 				Colorpicker.Title.Text = Name
 				Colorpicker.Size = UDim2.new(1, -10, 0, Colorpicker.Title.TextBounds.Y + 5)
 
-				Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
+				Pallete.Name = Name .. " P " .. Anka.ElementCounter
 				Pallete.Parent = Screen
 				Pallete.Visible = false
 
@@ -4647,7 +4643,7 @@ function Library:CreateWindow(Config: {
 					if sh1tcon then
 						sh1tcon:Disconnect()
 					end
-					shared.Anka.Elements[UniqueID] = nil
+					Anka.Elements[UniqueID] = nil
 				end
 
 				Colorpicker.Title.TextWrapped = WrapText or false
@@ -4661,15 +4657,15 @@ function Library:CreateWindow(Config: {
 				ColorpickerInit.Type = "ColorPicker"
 				ColorpickerInit.UniqueID = UniqueID
 				ColorpickerInit.IsAccentColorpicker = IsAccentColorpicker or false
-				shared.Anka.Elements[UniqueID] = ColorpickerInit
+				Anka.Elements[UniqueID] = ColorpickerInit
 
 				return ColorpickerInit
 			end
 
 			function SectionInit:CreateDivider(): Element
 				local DividerInit: Element = {}
-				shared.Anka.ElementCounter += 1
-				local UniqueID = "Divider - " .. shared.Anka.ElementCounter
+				Anka.ElementCounter += 1
+				local UniqueID = "Divider - " .. Anka.ElementCounter
 
 				local Divider = Instance.new("Frame")
 				Divider.Name = "Divider"
@@ -4707,12 +4703,12 @@ function Library:CreateWindow(Config: {
 					if Divider and Divider.Parent then
 						Divider:Destroy()
 					end
-					shared.Anka.Elements[UniqueID] = nil
+					Anka.Elements[UniqueID] = nil
 				end
 
 				DividerInit.Type = "Divider"
 				DividerInit.UniqueID = UniqueID
-				shared.Anka.Elements[UniqueID] = DividerInit
+				Anka.Elements[UniqueID] = DividerInit
 
 				return DividerInit
 			end
@@ -4721,7 +4717,7 @@ function Library:CreateWindow(Config: {
 				for _, element in next, Section.Container:GetChildren() do
 					if element:IsA("Frame") or element:IsA("TextButton") then
 						local elementData =
-							shared.Anka.Elements[element.Name:gsub(" [LBTSCPMD]$", "") .. " - " .. shared.Anka.ElementCounter]
+							Anka.Elements[element.Name:gsub(" [LBTSCPMD]$", "") .. " - " .. Anka.ElementCounter]
 						if elementData and elementData.Destroy then
 							elementData:Destroy()
 						else
@@ -5122,8 +5118,8 @@ function Library:CreateWindow(Config: {
 
 		local function UpdateKeybindEntries()
 			local currentKeybinds = {}
-			if shared.Anka and shared.Anka.Elements then
-				for uniqueID, element in pairs(shared.Anka.Elements) do
+			if Anka and Anka.Elements then
+				for uniqueID, element in pairs(Anka.Elements) do
 					if element and element.GetKeybind then
 						local keybindObj = element:GetKeybind()
 						if keybindObj and keybindObj.GetBind then
@@ -5498,8 +5494,8 @@ function Library:CreateWindow(Config: {
 
 		local function UpdateToggleEntries()
 			local currentToggles = {}
-			if shared.Anka and shared.Anka.Elements then
-				for uniqueID, element in pairs(shared.Anka.Elements) do
+			if Anka and Anka.Elements then
+				for uniqueID, element in pairs(Anka.Elements) do
 					if element and element.Type == "Toggle" and element.GetState then
 						local elementName = uniqueID:gsub(" %- %d+", "")
 						local state = element:GetState()
@@ -5627,8 +5623,8 @@ function Library:CreateWindow(Config: {
 
 		function ToggleListInit:GetEnabledCount()
 			local count = 0
-			if shared.Anka and shared.Anka.Elements then
-				for _, element in pairs(shared.Anka.Elements) do
+			if Anka and Anka.Elements then
+				for _, element in pairs(Anka.Elements) do
 					if element and element.Type == "Toggle" and element.GetState and element:GetState() then
 						count = count + 1
 					end
@@ -5804,9 +5800,9 @@ function Library:Destroy()
 		end
 	end
 
-	if shared.Anka and shared.Anka.Elements then
+	if Anka and Anka.Elements then
 		local elementcount = 0
-		for id, element in pairs(shared.Anka.Elements) do
+		for id, element in pairs(Anka.Elements) do
 			if element and type(element.Destroy) == "function" then
 				pcall(function()
 					element:Destroy()
@@ -5814,7 +5810,7 @@ function Library:Destroy()
 				elementcount = elementcount + 1
 			end
 		end
-		shared.Anka.Elements = {}
+		Anka.Elements = {}
 	end
 
 	if Library.Connections then
@@ -5851,12 +5847,12 @@ function Library:Destroy()
 	end
 
 	cleanupTable(Library.flags)
-	cleanupTable(shared.Anka and shared.Anka.flags)
+	cleanupTable(Anka and Anka.flags)
 
 	Library.ColorTable = {}
-	if shared.Anka then
-		shared.Anka.ElementCounter = 0
-		shared.Anka.flags = {}
+	if Anka then
+		Anka.ElementCounter = 0
+		Anka.flags = {}
 	end
 
 	Library.tick = nil
