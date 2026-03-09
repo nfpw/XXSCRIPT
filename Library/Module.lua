@@ -5816,9 +5816,11 @@ function Library:Destroy()
 	if Library.Connections then
 		local connectioncount = 0
 		for i, connection in pairs(Library.Connections) do
-			if connection and type(connection.Disconnect) == "function" then
-				pcall(function()
+			if connection then
+				local _ = pcall(function()
 					connection:Disconnect()
+				end) or pcall(function()
+					connection:disconnect()
 				end)
 				connectioncount = connectioncount + 1
 			end
